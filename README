@@ -1,0 +1,80 @@
+====================
+===== README =======
+====================
+
+Hyper2D is a minimalistic finite volume solver for hyperbolic PDEs and hypersonic flows, 
+licensed under the BSD-3-clause license.
+
+**********************************************************************************
+***
+***  Hyper2D comes for free. If you use Hyper2D in your research, please cite the
+***  following paper, describing the software: 
+***  
+***     S. Boccelli, T. E. Magin, 
+***  
+***     Hyper2D: a minimalistic finite volume solver for hyperbolic equations and 
+***     hypersonic flows,
+***  
+***     SoftwareX
+***    
+**********************************************************************************
+
+Hyper2D is designed to be as simple as possible and suitable for teaching purposes.
+You will find in this directory various versions of Hyper2D, with increasing capabilities and complexity.
+Each version is completely independent.
+
+Here is a summary:
+
+# PDE1D
+
+  This is a simple one-dimensional finite volume solver, implemented in Octave/MATLAB,
+  aimed at familiarizing with the Finite Volume Method. It solves the Euler equations 
+  for the Sod shock tube problem.
+
+# hyper2D_basic
+
+  This is the simplest implementation of Hyper2D, in Fortran. It includes the Shallow 
+  Water equations and the Euler equations (either with constant specific heat or with 
+  molecular vibration for diatomic molecules). You will find these files in the 
+  "various_PDEs" directory. You just have to rename the files  pde_shallow_water.f03 
+  or pde_euler.f03 to "pde.f03", put it in the main "src" directory and compile.
+ 
+  This version of Hyper2D solves the problem in a Cartesian grid, using a first order 
+  method  in space and explicit in time. A spatially second order version, using 
+  van Leer's MUSCL approach and TVD slope limiter is available in a sub-directory.
+ 
+  The domain is empty, and one can study the effect of boundaries or initialize the 
+  solution with a non-trivial initial state and track its evolution.
+
+
+# hyper2D_flatplate
+
+  This version builds on hyper2D_basic and introduces a flat plate inside the domain.
+ 
+# hyper2D_hypersonic
+
+  This directory contains a non-equilibrium two-temperatures solver for the Euler 
+  equations, targeted at hypersonic simulations. Two temperatures are considered: 
+  a roto-translational temperature T and a vibrational temperature Tv. 
+  These temperatures relax following the Landau-Teller model.
+  
+  The time scales for vibrational relaxation can be very fast. Therefore, implicit time
+  integration could be preferred in some conditions. The directory "other_files" contains
+  both an explicit and a point-implicit integration scheme. The point-implicit scheme
+  is only done on the vibrational energy equation, since the source term for the other
+  equations is zero.
+
+# hyper2D_unstructured
+  
+  This version reads an unstructured grid of quadrilaterals in SU2 format. The grid
+  is pre-processed using some Octave/MATLAB tools available in the "mesh_preprocessing"
+  directory, resulting in a "mesh.hyp" and a "nodes.hyp" files that are intelligible 
+  by Hyper2D.
+
+# hyper2D_CUDA
+ 
+  TO BE DONE
+
+
+
+
