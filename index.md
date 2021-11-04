@@ -1,6 +1,5 @@
-## Welcome to the Hyper2D web page
-
-
+Hyper2D is a minimalistic finite volume solver that focuses on simplicitly.
+The goal is letting you implement your system of PDEs with the least possible effort.
 
 ## Welcome to GitHub Pages
 
