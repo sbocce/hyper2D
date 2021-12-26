@@ -50,6 +50,8 @@ Here is a summary:
 # hyper2D_flatplate
 
   This version builds on hyper2D_basic and introduces a flat plate inside the domain.
+  It uses a Cartesian grid, and you can easily introduce other flat surfaces that
+  are aligned with grid cells. 
  
 # hyper2D_hypersonic
 
