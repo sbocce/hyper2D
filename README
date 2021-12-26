@@ -10,12 +10,12 @@ licensed under the BSD-3-clause license.
 ***  Hyper2D comes for free. If you use Hyper2D in your research, please cite the
 ***  following paper, describing the software: 
 ***  
-***     S. Boccelli, T. E. Magin, 
+***     S. Boccelli, J. G. McDonald, T. E. Magin, 
 ***  
 ***     Hyper2D: a minimalistic finite volume solver for hyperbolic equations and 
 ***     hypersonic flows,
 ***  
-***     SoftwareX
+***     SoftwareX (WORK IN PROGRESSSSSSSSS)
 ***    
 **********************************************************************************
 
@@ -73,8 +73,8 @@ Here is a summary:
 
 # hyper2D_CUDA
  
-  TO BE DONE
-
+  This version is written in CUDA Fortran and allows you to run Hyper2D on an NVidia
+  GPU. The code runs on a single GPU. 
 
 
 
