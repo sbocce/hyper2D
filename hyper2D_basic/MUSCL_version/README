@@ -1,0 +1,31 @@
+==========
+= README =
+==========
+
+This directory contains a spatially second order implementation of the basic hyper2D solver. 
+Please refer to the previous directories for a full description. 
+
+A Cartesian grid is employed, and no objects are introduced into the domain. 
+
+
+** Second order in space **
+With respect to the basic version, here the solution at the interface is estimated using 
+linear reconstruction (van Leer's MUSCL approach), slope-limited a TVD limiter.
+The reconstruction is performed in primitive variables.
+
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
+

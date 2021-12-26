@@ -1,0 +1,21 @@
+Generic Warning: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 1436
+Error reading ascii data. Possible mismatch of datasize with declaration.
+
+ERROR: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 939
+vtkStructuredPointsReader (0x56452f132fa0): Unsupported point attribute type: 11.35139e+045 for file: /mydir/PhD/software/hyper2D/GITHUB_VERSION/hyper2D_kinetic/relativistic/src/dumps/sol_00000100.vtk
+
+Generic Warning: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 1436
+Error reading ascii data. Possible mismatch of datasize with declaration.
+
+ERROR: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 939
+vtkStructuredPointsReader (0x56452f132fa0): Unsupported point attribute type: 70.16348e+045 for file: /mydir/PhD/software/hyper2D/GITHUB_VERSION/hyper2D_kinetic/relativistic/src/dumps/sol_00000150.vtk
+
+Generic Warning: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 1436
+Error reading ascii data. Possible mismatch of datasize with declaration.
+
+ERROR: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 939
+vtkStructuredPointsReader (0x5608b606c6a0): Unsupported point attribute type: 364.20545e+036 for file: /mydir/PhD/software/hyper2D/GITHUB_VERSION/hyper2D_kinetic/relativistic/src/dumps/sol_00000050.vtk
+
+Generic Warning: In /build/paraview-OJ3Fdc/paraview-5.4.1+dfsg4/VTK/IO/Legacy/vtkDataReader.cxx, line 1436
+Error reading ascii data. Possible mismatch of datasize with declaration.
+

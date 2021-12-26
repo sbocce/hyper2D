@@ -1,0 +1,52 @@
+==========
+= README =
+==========
+
+The hyper2D_hypersonic folder contains a non-equilibrium two-temperatures solver for the 
+Euler equations. Two temperatures are considered: a roto-translational temperature T and
+a vibrational temperature Tv. These temperatures relax following the Landau-Teller model.
+
+The time scales for vibrational relaxation can be very fast. Therefore, implicit time
+integration could be preferred in some conditions. The directory "other_files" contains
+both an explicit and a point-implicit integration scheme. The point-implicit scheme
+is only done on the vibrational energy equation, since the source term for the other 
+equations is zero.
+
+A Cartesian grid is used, and a flat plate is introduced inside the domain.
+All input data is specified inside the global_module.f03 file. You can modify it there, then
+compile and run the code.
+
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
+=========================
+= STRUCTURE OF THE CODE =
+=========================
+
+The hyper2d.f03 contains the main program.
+The global settings are implemented in the global_module.f03 file.
+The PDEs are implemented in the pde.f03 file.
+The time integrator and the computation of numerical fluxes are inside integrator.f03.
+The routine for exporting to VTK is in tools.f03.
+
+The program goes like this:
+1) The solution is initialized (calling pde.f03)
+2) Boundary conditions are applied (calling pde.f03)
+3) Time integration starts (calling integration.f03)
+  3.1) Numerical fluxes are computed 
+  3.2) The solution is updated in time
+4) The solution is exported (calling tools.f03)
+
+

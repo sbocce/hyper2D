@@ -1,0 +1,105 @@
+==========
+= README =
+==========
+
+==========================================
+= Computational grid, threads and blocks =
+==========================================
+
+Every thread is associated to a finite volume cell of the computational domain.
+Threads in the GPU are executed in blocks, for a maximum of 256 threads per block (but
+depending on the GPU). We define the variables BLOCK_X_threads and BLOCK_Y_threads, and 
+we have that N_threads_per_block = BLOCK_X_threads*BLOCK_Y_threads. 
+These quantities are defined in the "global_module.cuf" file.
+
+The total grid will be composed by BLOCK_X_threadx*N_BLOCKS_X elements along x and 
+analogously along y. 
+
+**** Choosing the number of threads per block ****
+
+Choose BLOCK_X_threads and BLOCK_Y_threads to be somewhere around 8-16. 
+If your PDE is very complex (for example, many equations) and require to define 
+a lot of working variables, the GPU registers could get filled. If this happens, select less
+threads per block. With the Euler equation, I had success using 16x16 on a Tesla K20X, while 
+for a system of 14 equations with complicated constitutive relations, I had success using 8.
+
+
+The integration time loop is divided into kernels. Each kernel does a different task and 
+before moving to the next kernel, the GPU must have done this into each block.
+Therefore, dividing the program into kernel enforces that the integration steps are executed
+completely and in the correct order.
+For instance: you first have to update the BCs, and only after this is done, start computing
+the fluxes.
+
+**** Choosing the number of blocks ****
+
+Once you have chosen the number of threads per block (that is limited, see above), you just 
+pick the number of blocks as to have the required total number of cells in the domain. 
+As simple as that.
+
+**** Wave speeds for the CFL condition ****
+
+Explicit time steps require to respect the CFL condition, that is the maximum Courant number 
+must be below a threshold (below 1).
+The Courant number is computed from the wave speeds (eigenvalues of the flux Jacobian).
+Now, these wave speeds depend on the position inside the domain. Therefore, during the 
+computation, we must keep track of the absolute maximum wave speeds. For a serial CPU solver
+this is a simple task. For a GPU solver, it's a bit more of an issue, because you need
+to do a "reduce" operation and compare the value in different cells avoiding racing 
+conditions.
+Creating a matrix of wave speeds, one per each cell, and then downloading it on the CPU 
+and computing with the CPU the maximum valie requires 1) a lot of additional memory and 
+2) a lot of CPU computations.
+Instead, we decided to work at a block-level: we define a matrix of wave speeds with 
+N_BLOCKS_X*N_BLOCKS_Y elements. Inside every block, we do an atomic operation and check 
+the maximum wave speed. Then, we download this matrix to the CPU, and do a CPU comparison 
+of these numbers to find the maximum one.
+
+
+NOTES: single or double precision is set at make time through a command! All real variables 
+       are just declared as "real", and a compile flag choses double over single precision.
+
+
+The hyper2D_basic folder contains a basic implementation of the Hyper2D finite volume solver.
+This version uses a time-explicit forward Euler time integrator, with fixed time step, and 
+a Cartesian grid. No objects are introduced in the domain. The solution simply evolves 
+from the initial state and according to the BCs.
+All input data is specified inside the global_module.f03 file. You can modify it there, then
+compile and run the code.
+
+Some different PDE systems are available in the "src/various_PDEs" directory.
+
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
+=========================
+= STRUCTURE OF THE CODE =
+=========================
+
+The hyper2d.f03 contains the main program.
+The global settings are implemented in the global_module.f03 file.
+The PDEs are implemented in the pde.f03 file.
+The time integrator and the computation of numerical fluxes are inside integrator.f03.
+The routine for exporting to VTK is in tools.f03.
+
+The program goes like this:
+1) The solution is initialized (calling pde.f03)
+2) Boundary conditions are applied (calling pde.f03)
+3) Time integration starts (calling integration.f03)
+  3.1) Numerical fluxes are computed 
+  3.2) The solution is updated in time
+4) The solution is exported (calling tools.f03)
+
+
