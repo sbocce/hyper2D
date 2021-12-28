@@ -19,6 +19,14 @@ licensed under the BSD-3-clause license.
 ***    
 **********************************************************************************
 
+==========
+
+Suggestion: for compiling and running the code you can use the following command
+
+ $ make cleanoutput && make && ./hyper2D.exe
+
+==========
+
 Hyper2D is designed to be as simple as possible and suitable for teaching purposes.
 You will find in this directory various versions of Hyper2D, with increasing capabilities and complexity.
 Each version is completely independent.
@@ -30,6 +38,10 @@ Here is a summary:
   This is a simple one-dimensional finite volume solver, implemented in Octave/MATLAB,
   aimed at familiarizing with the Finite Volume Method. It solves the Euler equations 
   for the Sod shock tube problem.
+
+# hyper1D
+
+  Fortran version of PDE1D, also showing higher order in space and time.
 
 # hyper2D_basic
 
