@@ -30,6 +30,7 @@ module global_module
 
   ! Order in time
   ! 1: forward Euler, first order in time
+  ! 2: midpoint Euler, second order in time
   ! 3: explicit TVD Runge-Kutta, third order in time
   integer, parameter :: time_order = 3
 

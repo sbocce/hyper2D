@@ -48,7 +48,23 @@ program hyper2D
 
     write(*,*) 'Timestep', t_ID, 'of', Nt
 
-    call forward_Euler_step(U, dt)
+    ! Integrate by one timestep
+ 
+    if (time_order .eq. 1) then
+
+      call forward_Euler_step(U, dt)
+
+    else if (time_order .eq. 2) then
+
+      call midpoint_Euler_step(U, dt)
+
+    else if (time_order .eq. 3) then
+
+      call RK3_step(U, dt)
+
+    end if
+
+    ! Export solution
 
     if ( mod(t_ID, 25) .EQ. 0 ) then ! Write to VTK every ... timesteps
 

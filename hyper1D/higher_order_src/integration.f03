@@ -134,7 +134,7 @@ module integration
     U1 = U ! Init
     U2 = U ! Init
 
-    do i = 5, Nx-4
+    do i = 5, Nx-4 ! Internal cells only
       call compute_fluxes(U, i, F_W, F_E)
       U1(:,i) = U(:,i) - dt/dx*(F_E - F_W)  ! No source term
     end do
@@ -516,7 +516,7 @@ print*, "WRONG! NEED TO USE TILDE OPERATOR!!!! WRONGGGGG"
       call compute_conserved_from_primitive(P_R, U_R)
 
     else if (space_order .EQ. 5) then  ! ============================================================================
-      ! ***** Third order solution - WENO 5 *****
+      ! ***** Fifth order solution - WENO 5 *****
   
       ! Perform reconstruction in primitive variables 
       call compute_primitive_from_conserved(U_m2, P_m2)

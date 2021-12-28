@@ -1,0 +1,46 @@
+==========
+= README =
+==========
+
+This directory contains a higher order implementation of the basic hyper2D solver. 
+Please refer to the previous directories for a full description. 
+
+A Cartesian grid is employed, and no objects are introduced into the domain. 
+Notice that four ghost cells are employed for each side of the domain.
+This allows to reach up to 5th accuracy at the boundaries (with WENO).
+We provide the following possibilities:
+
+SPACE INTEGRATION
+
+- Second order in space, using van Leer's MUSCL linear reconstruction with TVD slope limiter. 
+
+- Third order in space, with WENO method
+
+- Fifth order in space, with WENO method
+
+TIME INTEGRATION (explicit steppers)
+
+- First order, forward Euler
+
+- Second order, midpoint Euler
+
+- Third order, TVD Runge-Kutta
+
+These options are chosen via parameters in the global_module file.
+
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
+

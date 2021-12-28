@@ -30,7 +30,20 @@ module global_module
   real(kind=8), parameter :: dx = (x_max-x_min)/(Nx-4)
   real(kind=8), parameter :: dy = (y_max-y_min)/(Ny-4)
 
-  ! Spatial accuracy
-  logical, parameter :: bool_MUSCL = .TRUE.
+  ! Spacial accuracy (order)
+  ! 1: uniform sol in cell, first order in space
+  ! 2: MUSCL with TVD slope limiter, second order in space
+  ! 3: WENO 3rd order
+  ! 5: WENO 5th order
+  integer, parameter :: space_order = 5
+
+  ! Time accuracy (order)
+  ! 1: forward Euler, first order in time
+  ! 2: midpoint Euler, second order in time
+  ! 3: explicit TVD Runge-Kutta, third order in time
+  integer, parameter :: time_order = 3
+
+  ! Space fluxes: choose ONLY one
+  logical, parameter :: flux_type_Rusanov = .true.
 
 end module
