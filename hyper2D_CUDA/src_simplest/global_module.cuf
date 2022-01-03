@@ -1,0 +1,51 @@
+module global_module
+
+! This module contains data needed throughout the program. 
+! Most data is specified as a parameter, as to make the execution faster.
+! This module is loaded by most other modules.
+
+  implicit none
+  
+  ! Time integration
+
+  real, parameter    :: dt = 0.000001    ! [s] time step
+  integer, parameter :: Nt = 10000  ! Total number of time steps
+
+  integer, parameter :: WRITE_VTK_EACH = 200 ! Write a VTK file each this many time steps
+
+  ! Specify domain and discretization
+
+  real, parameter :: x_min = -1.0 ! [m] 
+  real, parameter :: x_max = 1.0  ! [m] 
+  real, parameter :: y_min = -1.0 ! [m] 
+  real, parameter :: y_max = 1.0  ! [m] 
+
+  ! Boundary conditions
+  logical, parameter :: X_PERIODIC = .False.
+  logical, parameter :: Y_PERIODIC = .False.
+
+  logical, parameter :: X_low_ZEROGRAD  = .False.
+  logical, parameter :: X_high_ZEROGRAD = .False.
+  logical, parameter :: Y_low_ZEROGRAD  = .False.
+  logical, parameter :: Y_high_ZEROGRAD = .False.
+
+  ! ======== CUDA launch configuration and GRID ==========
+  ! Threads per block along x and y
+
+  integer, parameter :: BLOCK_X_threads = 8 
+  integer, parameter :: BLOCK_Y_threads = 8
+  
+  integer, parameter :: N_BLOCKS_X = 100
+  integer, parameter :: N_BLOCKS_Y = 100
+
+  ! Total number of cells (including 4 ghost cells for each side)
+  ! (using 4 ghost cells makes it easy to reach high order accuracy)
+  ! Note: use a multiple of the number of threads per block
+
+  integer, parameter :: Nx = N_BLOCKS_X*BLOCK_X_threads
+  integer, parameter :: Ny = N_BLOCKS_Y*BLOCK_Y_threads
+
+  real, parameter :: dx = (x_max-x_min)/real(Nx-8) 
+  real, parameter :: dy = (y_max-y_min)/real(Ny-8)
+
+end module

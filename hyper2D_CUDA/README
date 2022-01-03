@@ -2,9 +2,22 @@
 = README =
 ==========
 
+This directory cointains a CUDA Fortran implementation of Hyper2D.
+
+The "src_simplest" directory contains the most basic implementation: 
+fixed time step, first order in time and space. Only the Euler equations
+are shown.
+
+The "src" directory contains the actual implementation: the time step
+is chosen based on the Courant number, higher order in space and time
+is implemented, and there are some different PDEs implemented, including axisymmetric 
+formulations.
+
 ==========================================
 = Computational grid, threads and blocks =
 ==========================================
+
+Notice that 4 layers of ghost cells are employed for each boundary.
 
 Every thread is associated to a finite volume cell of the computational domain.
 Threads in the GPU are executed in blocks, for a maximum of 256 threads per block (but

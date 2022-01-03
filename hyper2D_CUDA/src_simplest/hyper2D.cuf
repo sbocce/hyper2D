@@ -1,0 +1,92 @@
+! ######################################################################
+! ######################################################################
+! ###########     _                           ____  ____      ##########   
+! ###########    | |__  _   _ _ __   ___ _ __(___ \|  _ \     ##########
+! ###########    | '_ \| | | | '_ \ / _ \ '__| __) | | | |    ##########
+! ###########    | | | | |_| | |_) |  __/ |   / __/| |_| |    ##########
+! ###########    |_| |_|\__, | .__/ \___|_|  /_____|____/     ##########
+! ###########           |___/|_|                              ##########
+! ###########                                                 ########## 
+! ######################################################################
+! ######################################################################
+
+program hyper2D
+
+  use cudafor
+
+  use global_module   ! Simulation parameters: domain size, number of cells etc
+  use pde             ! Definition of the system of equations
+  use integration     ! Functions for integrating in time and numerical fluxes
+  use tools           ! Output subroutines etc etc
+
+  implicit none
+
+  ! The solution is a 3D matrix. 
+  ! The first index "eqID" represents the equation 
+  ! (for Euler 1: density, 2: x-momentum, 3: y-momentum, 4: total energy)
+  ! the second index "i" represents the x-position 
+  ! the third index "j" represents the y-position.
+  ! This might be counter-intuitive, but recall that Fortran represents data 
+  ! in column-major order.
+
+  real, dimension(Neq,Nx,Ny)         :: U, P ! Solution on the CPU
+  real, dimension(Neq,Nx,Ny), device :: d_U, d_U_new  ! Solution on the GPU
+  
+  ! Maximum wave speed (for each block)
+  real, dimension(N_BLOCKS_X,N_BLOCKS_Y)         :: ws_max_blocks
+  real, dimension(N_BLOCKS_X,N_BLOCKS_Y), device :: d_ws_max_blocks
+
+  ! Time integration variable
+  integer :: t_ID
+  integer :: err
+  real    :: t_now
+
+  type(dim3) :: grid, tBlock ! GPU Launch configuration
+
+  write(*,*) "Initializing solution..."
+  call initialize_solution(U) ! See the pde.f03 module
+
+  write(*,*) "Writing solution at time step", 0, "..."
+  call export_sol_vtk(0, U)
+
+  write(*,*) "Copying initial solution to the GPU..."
+  d_U = U
+  
+  ! ------- Prepare launch configuration ----------
+  tBlock     = dim3(BLOCK_X_threads, BLOCK_Y_threads, 1)
+  grid       = dim3(N_BLOCKS_X, N_BLOCKS_Y, 1)
+
+  ! $$$$$$$$$$$ Integrate in time $$$$$$$$$$$$$
+
+  t_now = 0.0
+  t_ID  = 0
+
+  do t_ID = 1, Nt
+
+    write(*,'(A10,I10,A4,I10)') 'Timestep: ', t_ID, ' of ', Nt
+
+    t_now = t_now + dt  ! Update simulation time
+
+    ! ------ Integrate one step in time -----
+
+    call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+    err = cudaDeviceSynchronize()
+
+    d_U_new = d_U ! Init 
+    call forward_Euler_step<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now) ! Updates d_U_new
+    d_U = d_U_new ! Now U is updated
+
+    ! ------- Write to VTK every ... timesteps
+    if ( mod(t_ID, WRITE_VTK_EACH) .EQ. 0 ) then 
+ 
+      write(*,*) "Writing solution at time step", t_ID, "..."
+      U = d_U ! Download solution from the GPU
+      call export_sol_vtk(t_ID, U)
+ 
+    end if
+
+  end do
+
+  err = cudaDeviceReset()
+
+end program

@@ -12,23 +12,19 @@ module pde
   implicit none
 
   ! Adiabatic constant "gamma" (ratio of specific heats, cp/cv)
-  real, parameter :: gam = 1.66667
-  real, parameter :: M   = 6.6337d-26 ! [kg] particles mass
- 
+  real, parameter    :: gam = 1.66667
   integer, parameter :: Neq = 4 ! Number of equations
 
-  real, parameter :: kB  = 1.38d-23 ! [J/K] Boltzmann constant
-
   ! Initial conditions in the domain
-  real, parameter :: rho0 = 1.225   ! [kg/m3]
-  real, parameter :: ux0  = 0.0     ! [m/s]
-  real, parameter :: uy0  = 0.0     ! [m/s]
-  real, parameter :: T0   = 300.0   ! [K]
+  real, parameter :: rho0 = 1.0   ! [kg/m3]
+  real, parameter :: ux0  = 0.0   ! [m/s]
+  real, parameter :: uy0  = 0.0   ! [m/s]
+  real, parameter :: P0   = 1.0   ! [Pa]
 
   ! Name of primitive variables, used ONLY for exporting the solution to VTK file
   ! NOTE: To initialize it here, all entries need to have the same length!!!
   !       I'm using three letters for simplicity.
-  character(len=20), dimension(Neq) :: prim_names = (/'rho','UUx','UUy','TTT'/)
+  character(len=20), dimension(Neq) :: prim_names = (/'rho','UUx','UUy','PPP'/)
 
   contains
 
@@ -41,15 +37,10 @@ module pde
     real, dimension(:,:,:), intent(inout) :: U
 
     integer      :: i, j
-    real :: n0, P0
-
     integer      :: j_jet_start, j_jet_end, i_jet_start, i_jet_end
     real :: uJET
     real :: x_jet_start, x_jet_end
     real :: y_jet_start, y_jet_end
-
-    n0   = rho0/M   ! [particles/m^3] number density
-    P0   = n0*kB*T0 ! [Pa] gas pressure
 
     ! THIS INITIAL SOLUTION ARE TWO JETS EXPANDING IN A LOWER DENSITY ATMOSPHERE
     ! Initialize solution in the whole domain
@@ -58,38 +49,15 @@ module pde
     U(3, :, :) = rho0*2.0*uy0 ! Momentum along y
     U(4, :, :) = rho0*2.0*(ux0**2 + uy0**2)/2.0 + P0/(gam-1.0) ! total energy
 
-    ! Impose two jets at the boundaries
-    n0   = rho0/M   ! [particles/m^3] number density
-    P0   = n0*kB*T0 ! [Pa] gas pressure
-
-    ! Put jets at half of the domain +/- 1/10 of the domain
-    x_jet_start = x_min + (x_max - x_min)/2.0 - (x_max - x_min)/10.0 
-    x_jet_end   = x_min + (x_max - x_min)/2.0 + (x_max - x_min)/10.0
-
-    y_jet_start = y_min + (y_max - y_min)/2.0 - (y_max - y_min)/10.0 
-    y_jet_end   = y_min + (y_max - y_min)/2.0 + (y_max - y_min)/10.0
-
-    i_jet_start = ceiling((x_jet_start - x_min)/(x_max - x_min)*Nx)
-    i_jet_end   = ceiling((x_jet_end   - x_min)/(x_max - x_min)*Nx)
-
-    j_jet_start = ceiling((y_jet_start - y_min)/(y_max - y_min)*Ny)
-    j_jet_end   = ceiling((y_jet_end   - y_min)/(y_max - y_min)*Ny)
-
-    uJET    = 400.0d0; ! [m/s] 
+    ! Create a jet at the bottom-left corner
+    uJET    = 0.25d0; ! [m/s] 
 
     ! ----- LEFT BC (x_min, whatever y) --------
 
-    U(1, 1:4, j_jet_start:j_jet_end) = rho0     ! Density
-    U(2, 1:4, j_jet_start:j_jet_end) = rho0*uJET ! Momentum along x
-    U(3, 1:4, j_jet_start:j_jet_end) = rho0*0.0 ! Momentum along y
-    U(4, 1:4, j_jet_start:j_jet_end) = rho0*(uJET**2 + 0.0**2)/2.0 + P0/(gam-1.0) ! total energy
- 
-    ! ----- BOTTOM BC (y_min, whatever x) --------
-
-    U(1, i_jet_start:i_jet_end, 1:4) = rho0      ! Density
-    U(2, i_jet_start:i_jet_end, 1:4) = rho0*0.0  ! Momentum along x
-    U(3, i_jet_start:i_jet_end, 1:4) = rho0*uJET ! Momentum along y
-    U(4, i_jet_start:i_jet_end, 1:4) = rho0*(0.0**2 + uJET**2)/2.0 + P0/(gam-1.0) ! total energy
+    U(1, 1:floor(Nx/10.0), 1:floor(Ny/5.0)) = rho0     ! Density
+    U(2, 1:floor(Nx/10.0), 1:floor(Ny/5.0)) = rho0*uJET ! Momentum along x
+    U(3, 1:floor(Nx/10.0), 1:floor(Ny/5.0)) = rho0*0.0 ! Momentum along y
+    U(4, 1:floor(Nx/10.0), 1:floor(Ny/5.0)) = rho0*(uJET**2 + 0.0**2)/2.0 + P0/(gam-1.0) ! total energy
  
   end subroutine 
 
@@ -117,7 +85,7 @@ module pde
     prim(1) = rho
     prim(2) = ux
     prim(3) = uy 
-    prim(4) = P/(kB*rho/M) ! T = P/(n*kB) = P/(rho*Ri), with Ri=kB/M the gas constant
+    prim(4) = P
 
   end subroutine
 
@@ -145,7 +113,7 @@ module pde
     prim(1) = rho
     prim(2) = ux
     prim(3) = uy 
-    prim(4) = P/(kB*rho/M) ! T = P/(n*kB) = P/(rho*Ri), with Ri=kB/M the gas constant
+    prim(4) = P
 
   end subroutine
   
@@ -161,15 +129,13 @@ module pde
     real, dimension(Neq), intent(out) :: U
 
     ! Working variables
-    real :: rho, ux, uy, T, P
+    real :: rho, ux, uy, P
 
     ! Extract primitive variables
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
-
-    P   = rho/M*kB*T
+    P   = prim(4)
 
     ! Compose array of primitive variables
     U(1) = rho
@@ -193,16 +159,15 @@ module pde
     real, intent(out) :: ws_max, ws_min
   
     real, dimension(Neq) :: prim
-    real :: rho, ux, uy, T, P, rhoE
+    real :: rho, ux, uy, P, rhoE
     
     ! Compute primitive variables
     call compute_primitive_from_conserved(U, prim)
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
+    P   = prim(4)
 
-    P    = rho*kB/M*T ! Compute pressure, P = n*kB*T
     rhoE = rho*(ux*ux + uy*uy)/2.0 + P/(gam-1)
 
     ! Assemble fluxes Fx
@@ -231,16 +196,15 @@ module pde
     real, intent(out) :: ws_max, ws_min
   
     real, dimension(Neq) :: prim
-    real :: rho, ux, uy, T, P, rhoE
+    real :: rho, ux, uy, P, rhoE
     
     ! Compute primitive variables
     call compute_primitive_from_conserved(U, prim)
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
+    P   = prim(4)
 
-    P    = rho*kB/M*T ! Compute pressure, P = n*kB*T
     rhoE = rho*(ux*ux + uy*uy)/2.0 + P/(gam-1)
 
     ! Assemble fluxes Fy
@@ -279,19 +243,36 @@ module pde
 
     ! Computes vector of primitive variables "prim" from the conserved variables "U"
 
-    ! The source term for this PDEs is zero.
-
     implicit none
 
     real, dimension(Neq), intent(in)  :: U
     integer,              intent(in)  :: i, j
     real, dimension(Neq), intent(out) :: Src
 
+    ! Working variables
+    real, dimension(Neq) :: prim
+
+    real :: rho, ux, uy, P, rhoE
+    real :: y_j
+
+    call compute_primitive_from_conserved(U, prim)
+
+    ! Compose array of primitive variables
+    rho = prim(1) 
+    ux  = prim(2) 
+    uy  = prim(3) 
+    P   = prim(4) 
+
+    y_j = y_min + dy/2.0d0 + real(j-5)*dy ! Remember: 4 ghost cells per side
+
+    ! Src = Src/y_j
+
     Src = 0.0d0
+    Src(3) = P/y_j
 
   end subroutine
-
-  ! ============================================================= 
+ 
+  ! ============================================================
 
    attributes(global) subroutine assign_BCs(U)
  

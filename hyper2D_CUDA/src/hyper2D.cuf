@@ -69,13 +69,95 @@ program hyper2D
     t_now = t_now + dt  ! Update simulation time
     t_ID  = t_ID + 1
 
-    ! ------ Forward Euler integration 
-    call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
-    err = cudaDeviceSynchronize()
+    ! ------ Integrate one step in time -----
 
-    d_U_new = d_U ! Init 
-    call forward_Euler_step<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now) ! Updates d_U_new
-    d_U = d_U_new ! Now U is updated
+    if (time_order .eq. 1) then ! -------- Forward Euler integration
+
+      call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+      err = cudaDeviceSynchronize()
+
+      d_U_new = d_U ! Init 
+      call forward_Euler_step<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now) ! Updates d_U_new
+      d_U = d_U_new ! Now U is updated
+
+    else if (time_order .eq. 3) then ! -------- RK3 low storage
+
+      ! 3rd order low storage Runge Kutta explicit method, 
+      ! see Gottlieb & Shu (1998), Eq. 4.1, 4.2 and 4.3.
+      ! 
+      ! !!!!!!!! STABLE FOR Courant number < 0.32 !!!!!!!!!
+      ! 
+      ! u  = U % Init
+      ! 
+      ! % First step
+      ! du = dt*L(u);
+      ! u  = u + B1*du;
+      ! 
+      ! % Second step
+      ! du = A2*du + dt*L(u);
+      ! u  = u + B2*du;
+      ! 
+      ! % Third step
+      ! du = A3*du + dt*L(u):
+      ! u  = u + B3*du;
+      ! 
+      ! U = u % Here we go.
+      ! 
+      ! With: 
+      ! 
+      ! A2 =   -2.915492524638791
+      ! A3 =   -9.351737557288897e-08
+      ! 
+      ! B1 =    9.245740000000000e-01
+      ! B2 =    2.877130631867487e-01 
+      ! B3 =    6.265381095127399e-01 
+      ! 
+      ! Note: in the following, we use "d_U_new" as du.
+      !  
+
+      call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+      err = cudaDeviceSynchronize()
+
+      ! ++++++++++ First step +++++++++++
+
+      call RK_low_storage_step_dU<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, 0.0)
+
+      err = cudaDeviceSynchronize()
+
+      call RK_low_storage_step_U<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, real(0.92457d0))
+
+      call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+      err = cudaDeviceSynchronize()
+
+      ! ++++++++++ Second step +++++++++++
+
+      call RK_low_storage_step_dU<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, real(-2.915492524638791d0))
+
+      err = cudaDeviceSynchronize()
+      
+      call RK_low_storage_step_U<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, real(0.2877130631867487d0))
+
+      call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+      err = cudaDeviceSynchronize()
+
+      ! ++++++++++ Third step +++++++++++
+
+      call RK_low_storage_step_dU<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, real(-9.351737557288897d-08))
+
+      err = cudaDeviceSynchronize()
+
+      call RK_low_storage_step_U<<<grid,tBlock>>>(d_U, d_U_new, dt, t_now, real(0.6265381095127399d0))
+
+      call assign_BCs<<<grid,tBlock>>>(d_U) ! Update BCs in real time in case periodicity is needed
+      err = cudaDeviceSynchronize()
+
+    else 
+
+      write(*,*) "Attention! Time integration order not recognized! Check global_module file!"
+      write(*,*) "Aborting!"
+      stop
+
+    end if
 
     ! ------ Update time step from CFL condition
     call compute_ws_max_blocks<<<grid,tBlock>>>(d_U, d_ws_max_blocks)

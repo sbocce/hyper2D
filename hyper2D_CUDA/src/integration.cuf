@@ -26,7 +26,9 @@ module integration
 
     integer :: i, j, eqID
     
-    real, dimension(Neq) :: F_N, F_S, F_W, F_E 
+    real, dimension(Neq) :: F_N, F_S, F_W, F_E, Src
+
+    real :: y_j, y_jmhalf, y_jphalf ! For axisymm simulations
 
     ! Find coordinates of the present thread (aka cell i and j)
     i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
@@ -35,12 +37,28 @@ module integration
 
     ! Update solution using the forward Euler integrator - INTERNAL CELLS only,
     ! do not overwrite ghost cells
-    if ( (i .ge. 3) .and. (i .le. Nx-2) .and. (j .ge. 3) .and. (j .le. Ny-2) ) then
+    if ( (i .ge. 5) .and. (i .le. Nx-4) .and. (j .ge. 5) .and. (j .le. Ny-4) ) then
 
         ! call compute_fluxes_Rusanov(U, i, j, F_N, F_S, F_W, F_E)
         call compute_fluxes_HLL(U, i, j, F_N, F_S, F_W, F_E)
 
-        U_new(:,i,j) = U(:,i,j) - dt/dx*(F_E - F_W) - dt/dy*(F_N - F_S)
+        call compute_source_term(U(:,i,j), i, j, Src)
+
+        if (bool_AXI) then ! ******* Axi-symmetric simulation ********
+
+          ! Geometry
+          y_j      = y_min + dy/2.0d0 + (real(j)-5.0d0)*dy
+          y_jmhalf = y_j - dy/2.0d0
+          y_jphalf = y_j + dy/2.0d0
+
+          ! Update step
+          U_new(:,i,j) = U(:,i,j) - dt/dx*(F_E - F_W) - dt/(dy*y_j)*(F_N*y_jphalf - F_S*y_jmhalf) + dt*Src
+
+        else ! ******* Planar geometry *******
+
+          U_new(:,i,j) = U(:,i,j) - dt/dx*(F_E - F_W) - dt/dy*(F_N - F_S) + dt*Src
+
+        end if
         
         ! Check that the solution did not diverge
         do eqID = 1, Neq
@@ -50,6 +68,89 @@ module integration
           end if
         end do
 
+    end if
+
+  end subroutine
+
+  ! ======================================================================== 
+  
+  attributes(global) subroutine RK_low_storage_step_dU(U, dU, dt, t_now, A)
+
+    ! This kernel performs one step of the low storage Runge-Kutta method
+    ! as described by Gottlieb & Shu (1998)
+
+    implicit none
+ 
+    real, dimension(Neq,Nx,Ny) :: U, dU ! Device variable in global memory
+    real, value :: dt, t_now ! Value that we pass from host space to the kernel
+    real, value :: A ! Value for the low-storage RK method
+
+    integer :: i, j, eqID
+    
+    real, dimension(Neq) :: F_N, F_S, F_W, F_E, Src
+
+    real :: y_j, y_jmhalf, y_jphalf ! For axisymm simulations
+
+    ! Find coordinates of the present thread (aka cell i and j)
+    i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
+    j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
+
+    ! Update solution using the forward Euler integrator - INTERNAL CELLS only,
+    ! do not overwrite ghost cells
+    if ( (i .ge. 5) .and. (i .le. Nx-4) .and. (j .ge. 5) .and. (j .le. Ny-4) ) then
+
+        ! call compute_fluxes_Rusanov(U, i, j, F_N, F_S, F_W, F_E)
+        call compute_fluxes_HLL(U, i, j, F_N, F_S, F_W, F_E)
+
+        call compute_source_term(U(:,i,j), i, j, Src)
+
+        if (bool_AXI) then ! ******* Axi-symmetric simulation ********
+
+          ! Geometry
+          y_j      = y_min + dy/2.0d0 + (real(j)-5.0d0)*dy ! Remember, 4 ghost cells per side
+          y_jmhalf = y_j - dy/2.0d0
+          y_jphalf = y_j + dy/2.0d0
+
+          ! Update step
+          dU(:,i,j) = A*dU(:,i,j) - dt/dx*(F_E - F_W) - dt/(dy*y_j)*(F_N*y_jphalf - F_S*y_jmhalf) + dt*Src
+
+        else ! ******* Planar geometry *******
+
+          dU(:,i,j) = A*dU(:,i,j) - dt/dx*(F_E - F_W) - dt/dy*(F_N - F_S)
+
+        end if
+        
+    end if
+
+  end subroutine
+
+  ! ======================================================================== 
+
+  attributes(global) subroutine RK_low_storage_step_U(U, dU, dt, t_now, B)
+
+    ! This kernel performs one step of the low storage Runge-Kutta method
+    ! as described by Gottlieb & Shu (1998)
+
+    implicit none
+ 
+    real, dimension(Neq,Nx,Ny) :: U, dU ! Device variable in global memory
+    real, value :: dt, t_now ! Value that we pass from host space to the kernel
+    real, value :: B ! Value for the low-storage RK method
+
+    integer :: i, j, eqID
+    
+    real, dimension(Neq) :: F_N, F_S, F_W, F_E 
+
+    ! Find coordinates of the present thread (aka cell i and j)
+    i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
+    j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
+
+    ! Update solution using the forward Euler integrator - INTERNAL CELLS only,
+    ! do not overwrite ghost cells
+    if ( (i .ge. 5) .and. (i .le. Nx-4) .and. (j .ge. 5) .and. (j .le. Ny-4) ) then
+
+        U(:,i,j) = U(:,i,j) + B*dU(:,i,j)
+        
     end if
 
   end subroutine
@@ -74,7 +175,7 @@ module integration
     ! ------ North interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U(:,i,j+3), U_L, U_R)
 
     call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L) 
     call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
@@ -86,7 +187,7 @@ module integration
     ! ------ South interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i,j-3), U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U_L, U_R)
 
     call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
@@ -98,7 +199,7 @@ module integration
     ! ------ East interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U(:,i+3,j), U_L, U_R)
 
     call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
@@ -110,7 +211,7 @@ module integration
     ! ------ West interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i-3,j), U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U_L, U_R)
 
     call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
@@ -141,7 +242,7 @@ module integration
     ! ------ North interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U(:,i,j+3), U_L, U_R)
 
     call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
@@ -161,7 +262,7 @@ module integration
     ! ------ South interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i,j-3), U(:,i,j-2), U(:,i,j-1), U(:,i,j), U(:,i,j+1), U(:,i,j+2), U_L, U_R)
 
     call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
@@ -181,7 +282,7 @@ module integration
     ! ------ East interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U(:,i+3,j), U_L, U_R)
 
     call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
@@ -201,7 +302,7 @@ module integration
     ! ------ West interface
 
     ! Reconstruct the solution, passing the four cells that neighbor the interface
-    call reconstruct_sol_interface(U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U_L, U_R)
+    call reconstruct_sol_interface(U(:,i-3,j), U(:,i-2,j), U(:,i-1,j), U(:,i,j), U(:,i+1,j), U(:,i+2,j), U_L, U_R)
 
     call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
     call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
@@ -221,90 +322,6 @@ module integration
   end subroutine
 
   ! ============================================================
-
-  attributes(global) subroutine assign_BCs(U)
-
-  ! This subroutine assigns boundary values to the ghost cells. 
-  ! If X_PERIODIC or Y_PERIODIC booleans are set, then periodic BCs are updated. 
-  ! This is done by copying into the ghost cells the values inside the 
-  ! domain cells at the other side of the domain.
-  ! Otherwise, if these are not set, the boundary cells are left at their previous value.
- 
-    implicit none
-
-    real, dimension(:,:,:) :: U ! This is a device variable, in global memory
-
-    integer :: i, j
-
-    i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
-    j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
-
-    ! ----- Periodic BCs ------
-    if (X_PERIODIC) then
-
-      if (i .eq. 1) then
-        U(:, i,j) = U(:, Nx-3,j)
-      else if (i .eq. 2) then
-        U(:, i,j) = U(:, Nx-2,j)
-      else if (i .eq. Nx-1) then
-        U(:, i,j) = U(:, 3,j)
-      else if (i .eq. Nx) then
-        U(:, i,j) = U(:, 4,j)
-      end if
-
-    end if
-
-    if (Y_PERIODIC) then
-
-      if (j .eq. 1) then
-        U(:, i,j) = U(:, i, Ny-3)
-      else if (j .eq. 2) then
-        U(:, i,j) = U(:, i, Ny-2)
-      else if (j .eq. Ny-1) then
-        U(:, i,j) = U(:, i, 3)
-      else if (j .eq. Ny) then
-        U(:, i,j) = U(:, i, 4)
-      end if
-
-    end if
-
-    ! ----- Zero Gradient -----
-
-    if (X_low_ZEROGRAD) then
-      if (i .eq. 1) then
-        U(:, i,j) = U(:, 3,j)
-      else if (i .eq. 2) then
-        U(:, i,j) = U(:, 3,j)
-      end if
-    end if
-
-    if (X_high_ZEROGRAD) then
-      if (i .eq. Nx-1) then
-        U(:, i,j) = U(:, Nx-2,j)
-      else if (i .eq. Nx) then
-        U(:, i,j) = U(:, Nx-2,j)
-      end if
-    end if
-
-    if (Y_low_ZEROGRAD) then
-      if (j .eq. 1) then
-        U(:, i,j) = U(:, i, 3)
-      else if (j .eq. 2) then
-        U(:, i,j) = U(:, i, 3)
-      end if
-    end if
-
-    if (Y_low_ZEROGRAD) then
-      if (j .eq. Ny-1) then
-        U(:, i,j) = U(:, i, Ny-2)
-      else if (j .eq. Ny) then
-        U(:, i,j) = U(:, i, Ny-2)
-      end if
-    end if
-
-  end subroutine 
-
-  ! ===============================================================
 
   attributes(global) subroutine compute_ws_max_blocks(U, ws_max_blocks)
 
@@ -340,27 +357,28 @@ module integration
 
   ! ======================================================================== 
 
-  attributes(device) subroutine reconstruct_sol_interface(U_m2, U_m1, U_p1, U_p2, U_L, U_R)
+  attributes(device) subroutine reconstruct_sol_interface(U_m3, U_m2, U_m1, U_p1, U_p2, U_p3, U_L, U_R)
 
     ! Takes the four points around an interface (minus_1, minus_2, plus_1, plus_2) and 
     ! computes the left and right states using first order or MUSCL TVD-limited reconstruction
 
-    real, dimension(Neq), intent(in)  :: U_m2, U_m1, U_p1, U_p2
+    real, dimension(Neq), intent(in)  :: U_m3, U_m2, U_m1, U_p1, U_p2, U_p3
     real, dimension(Neq), intent(out) :: U_L, U_R
 
     ! Working variables
     integer              :: eID              ! equation ID
     real                 :: theta_L, theta_R ! ratio of consecutive gradients
-    real, dimension(Neq) :: P_m2, P_m1, P_p1, P_p2, P_L, P_R ! primitive variables 
+    real, dimension(Neq) :: P_m3, P_m2, P_m1, P_p1, P_p2, P_p3, P_L, P_R ! primitive variables 
 
-    if (MUSCL_bool .EQV. .FALSE.) then
-    ! ***** First order solution *****
+    real :: d0, d1, b0, b1, a0, a1, omega0, omega1, P0, P1 ! WENO 3rd order
+    real :: b2, a2, omega2, P2                             ! additional for WENO 5th order
+
+    if (space_order .EQ. 1) then      ! ***** First order solution *****
 
       U_L = U_m1
       U_R = U_p1
 
-    else
-      ! ***** Second order solution *****
+    else if (space_order .eq. 2) then ! ***** Second order solution - MUSCL TVD *****
 
       ! Perform reconstruction in primitive variables 
       call compute_primitive_from_conserved(U_m2, P_m2)
@@ -376,7 +394,124 @@ module integration
 
         ! Limited linear reconstruction 
         P_L(eID) = P_m1(eID) + phi_limiter(theta_L)*(P_m1(eID) - P_m2(eID))/2.0
-        P_R(eID) = P_p1(eID) - phi_limiter(1.0/(theta_R+1.0d-15))*(P_p2(eID) - P_p1(eID))/2.0
+        P_R(eID) = P_p1(eID) - phi_limiter(1.0/real(theta_R+1.0d-15))*(P_p2(eID) - P_p1(eID))/2.0
+
+      end do
+
+      ! Compute conservative variables
+      call compute_conserved_from_primitive(P_L, U_L)
+      call compute_conserved_from_primitive(P_R, U_R)
+
+    else if (space_order .eq. 3) then ! ***** Third order solution - WENO3 *****
+
+      ! Perform reconstruction in primitive variables 
+      call compute_primitive_from_conserved(U_m2, P_m2)
+      call compute_primitive_from_conserved(U_m1, P_m1)
+      call compute_primitive_from_conserved(U_p1, P_p1)
+      call compute_primitive_from_conserved(U_p2, P_p2)
+
+      do eID = 1, Neq ! Loop on the quantities
+
+        ! ---------- APPROXIMATE v_int^L (left state) ------------
+
+        d0 = 2.0/3.0
+        d1 = 1.0/3.0
+
+        b0 = (P_p1(eID) - P_m1(eID))**2
+        b1 = (P_m1(eID) - P_m2(eID))**2
+
+        a0 = d0/(0.000001 + b0)**2
+        a1 = d1/(0.000001 + b1)**2
+
+        omega0 = a0/(a0+a1) ! Rescale
+        omega1 = a1/(a0+a1) ! Rescale
+
+        ! Approximate v for r=0 and r=1
+        P0 = 0.5*P_m1(eID) + 0.5*P_p1(eID)
+        P1 = -0.5*P_m2(eID) + 3.0/2.0*P_m1(eID)
+
+        P_L(eID) = omega0*P0 + omega1*P1
+
+        ! ---------- APPROXIMATE v_int^R (right state) ------------
+
+        b0 = (P_p1(eID) - P_m1(eID))**2
+        b1 = (P_p2(eID) - P_p1(eID))**2
+
+        a0 = d0/(0.000001 + b0)**2
+        a1 = d1/(0.000001 + b1)**2
+
+        omega0 = a0/(a0+a1) ! Rescale
+        omega1 = a1/(a0+a1) ! Rescale
+
+        ! Approximate v for r=0 and r=1
+        P0 = 0.5*P_m1(eID) + 0.5*P_p1(eID)
+        P1 = -0.5*P_p2(eID) + 3.0/2.0*P_p1(eID)
+
+        P_R(eID) = omega0*P0 + omega1*P1;
+
+      end do
+
+      ! Compute conservative variables
+      call compute_conserved_from_primitive(P_L, U_L)
+      call compute_conserved_from_primitive(P_R, U_R)
+
+    else if (space_order .eq. 5) then ! ***** 5th order solution - WENO5 *****
+
+      ! Perform reconstruction in primitive variables 
+      call compute_primitive_from_conserved(U_m3, P_m3)
+      call compute_primitive_from_conserved(U_m2, P_m2)
+      call compute_primitive_from_conserved(U_m1, P_m1)
+      call compute_primitive_from_conserved(U_p1, P_p1)
+      call compute_primitive_from_conserved(U_p2, P_p2)
+      call compute_primitive_from_conserved(U_p3, P_p3)
+
+      do eID = 1, Neq ! Loop on the quantities
+
+        ! ---------- APPROXIMATE v_int^L (left state) ------------
+
+        b0 = 13.0d0/12.0d0*(P_m3(eID)-2.0*P_m2(eID) + P_m1(eID))**2 &
+           + 1.0d0/4.0d0*(P_m3(eID)-4.0*P_m2(eID)+3.0*P_m1(eID))**2
+
+        b1 = 13.0d0/12.0d0*(P_m2(eID)-2.0*P_m1(eID) + P_p1(eID))**2 &
+           + 1.0d0/4.0d0*(P_m2(eID)-P_p1(eID))**2
+
+        b2 = 13.0d0/12.0d0*(P_m1(eID)-2.0*P_p1(eID) + P_m2(eID))**2 &
+           + 1.0d0/4.0d0*(3.0*P_m1(eID)-4.0*P_p1(eID)+P_p2(eID))**2
+
+        a0 = 1.0d0/10.0d0*(1.0d0/(1.0d-6 + b0)**2)
+        a1 = 6.0d0/10.0d0*(1.0d0/(1.0d-6 + b1)**2)
+        a2 = 3.0d0/10.0d0*(1.0d0/(1.0d-6 + b2)**2)
+
+        omega0 = a0/(a0+a1+a2)
+        omega1 = a1/(a0+a1+a2)
+        omega2 = a2/(a0+a1+a2)
+
+        P_L(eID) = omega0*(2.0d0/6.0d0*P_m3(eID) - 7.0d0/6.0d0*P_m2(eID) + 11.0d0/6.0d0*P_m1(eID)) &
+                 + omega1*(-1.0d0/6.0d0*P_m2(eID) + 5.0d0/6.0d0*P_m1(eID) + 2.0d0/6.0d0*P_p1(eID)) &
+                 + omega2*(2.0d0/6.0d0*P_m1(eID) + 5.0d0/6.0d0*P_p1(eID) - 1.0d0/6.0d0*P_p2(eID))
+
+        ! ---------- APPROXIMATE v_int^R (right state) ------------
+
+        b0 = 13.0d0/12.0d0*(P_p1(eID)-2.0*P_p2(eID) + P_p3(eID))**2 &
+           + 1.0d0/4.0d0*(3.0*P_p1(eID)-4.0*P_p2(eID)+P_p3(eID))**2
+
+        b1 = 13.0d0/12.0d0*(P_m1(eID)-2.0*P_p1(eID) + P_p2(eID))**2 &
+           + 1.0d0/4.0d0*(P_m1(eID)-P_p2(eID))**2
+
+        b2 = 13.0d0/12.0d0*(P_m2(eID)-2.0*P_m1(eID) + P_p1(eID))**2 &
+           + 1.0d0/4.0d0*(P_m2(eID)-4.0*P_m1(eID)+3.0*P_p1(eID))**2
+
+        a0 = 1.0d0/10.0d0*(1.0d0/(1.0d-6 + b0)**2)
+        a1 = 6.0d0/10.0d0*(1.0d0/(1.0d-6 + b1)**2)
+        a2 = 3.0d0/10.0d0*(1.0d0/(1.0d-6 + b2)**2)
+
+        omega0 = a0/(a0+a1+a2)
+        omega1 = a1/(a0+a1+a2)
+        omega2 = a2/(a0+a1+a2)
+
+        P_R(eID) = omega2*(-1.0d0/6.0d0*P_m2(eID) + 5.0d0/6.0d0*P_m1(eID) + 2.0d0/6.0d0*P_p1(eID)) &
+                 + omega1*(2.0d0/6.0d0*P_m1(eID)  + 5.0d0/6.0d0*P_p1(eID) - 1.0d0/6.0d0*P_p2(eID)) &
+                 + omega0*(11.0d0/6.0d0*P_p1(eID) - 7.0d0/6.0d0*P_p2(eID) + 2.0d0/6.0d0*P_p3(eID)) 
 
       end do
 

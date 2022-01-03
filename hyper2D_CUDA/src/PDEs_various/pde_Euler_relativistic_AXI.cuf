@@ -11,24 +11,17 @@ module pde
 
   implicit none
 
-  ! Adiabatic constant "gamma" (ratio of specific heats, cp/cv)
-  real, parameter :: gam = 1.66667
-  real, parameter :: M   = 6.6337d-26 ! [kg] particles mass
- 
   integer, parameter :: Neq = 4 ! Number of equations
 
-  real, parameter :: kB  = 1.38d-23 ! [J/K] Boltzmann constant
-
-  ! Initial conditions in the domain
-  real, parameter :: rho0 = 1.225   ! [kg/m3]
-  real, parameter :: ux0  = 0.0     ! [m/s]
-  real, parameter :: uy0  = 0.0     ! [m/s]
-  real, parameter :: T0   = 300.0   ! [K]
+  real, parameter :: M      = 5.3136d-26   ! [kg] molecular mass 
+  real, parameter :: Gam    = 5.0d0/3.0d0  ! (relativistic) adiabatic constant
+  real, parameter :: c      = 1.0d0        ! Speed of light
+  real, parameter :: PI     = 4.0d0*DATAN(1.0d0)
 
   ! Name of primitive variables, used ONLY for exporting the solution to VTK file
   ! NOTE: To initialize it here, all entries need to have the same length!!!
   !       I'm using three letters for simplicity.
-  character(len=20), dimension(Neq) :: prim_names = (/'rho','UUx','UUy','TTT'/)
+  character(len=20), dimension(Neq) :: prim_names = (/'rho','UUx','UUy','PPP'/)
 
   contains
 
@@ -40,56 +33,53 @@ module pde
 
     real, dimension(:,:,:), intent(inout) :: U
 
+    ! Primitive variables
+    real :: rho0, ux0, uy0, P0 ! Background 
+    real :: rhoJ, uxJ, uyJ, PJ ! Jet
+
+    real, dimension(Neq) :: U0, prim0, UJ, primJ
+ 
     integer      :: i, j
-    real :: n0, P0
 
-    integer      :: j_jet_start, j_jet_end, i_jet_start, i_jet_end
-    real :: uJET
-    real :: x_jet_start, x_jet_end
-    real :: y_jet_start, y_jet_end
+    ! Background
+    rho0 = 10.0
+    ux0  = 0.0
+    uy0  = 0.0
+    P0   = 0.01
 
-    n0   = rho0/M   ! [particles/m^3] number density
-    P0   = n0*kB*T0 ! [Pa] gas pressure
+    prim0(1) = rho0
+    prim0(2) = ux0
+    prim0(3) = uy0
+    prim0(4) = P0
+
+    call CPU_compute_conserved_from_primitive(prim0, U0)
+
+    ! Jet
+    rhoJ = 0.1
+    uxJ  = 0.99
+    uyJ  = 0.0
+    PJ   = 0.01
+
+    primJ(1) = rhoJ
+    primJ(2) = uxJ
+    primJ(3) = uyJ
+    primJ(4) = PJ
+
+    call CPU_compute_conserved_from_primitive(primJ, UJ)
 
     ! THIS INITIAL SOLUTION ARE TWO JETS EXPANDING IN A LOWER DENSITY ATMOSPHERE
-    ! Initialize solution in the whole domain
-    U(1, :, :) = rho0*2.0     ! Density
-    U(2, :, :) = rho0*2.0*ux0 ! Momentum along x
-    U(3, :, :) = rho0*2.0*uy0 ! Momentum along y
-    U(4, :, :) = rho0*2.0*(ux0**2 + uy0**2)/2.0 + P0/(gam-1.0) ! total energy
+    ! Initialize solution in the whole domain (including ghost cells)
+    U(1, :, :) = U0(1)
+    U(2, :, :) = U0(2)
+    U(3, :, :) = U0(3)
+    U(4, :, :) = U0(4)
 
-    ! Impose two jets at the boundaries
-    n0   = rho0/M   ! [particles/m^3] number density
-    P0   = n0*kB*T0 ! [Pa] gas pressure
+    ! Create a jet at the bottom-left corner
 
-    ! Put jets at half of the domain +/- 1/10 of the domain
-    x_jet_start = x_min + (x_max - x_min)/2.0 - (x_max - x_min)/10.0 
-    x_jet_end   = x_min + (x_max - x_min)/2.0 + (x_max - x_min)/10.0
-
-    y_jet_start = y_min + (y_max - y_min)/2.0 - (y_max - y_min)/10.0 
-    y_jet_end   = y_min + (y_max - y_min)/2.0 + (y_max - y_min)/10.0
-
-    i_jet_start = ceiling((x_jet_start - x_min)/(x_max - x_min)*Nx)
-    i_jet_end   = ceiling((x_jet_end   - x_min)/(x_max - x_min)*Nx)
-
-    j_jet_start = ceiling((y_jet_start - y_min)/(y_max - y_min)*Ny)
-    j_jet_end   = ceiling((y_jet_end   - y_min)/(y_max - y_min)*Ny)
-
-    uJET    = 400.0d0; ! [m/s] 
-
-    ! ----- LEFT BC (x_min, whatever y) --------
-
-    U(1, 1:4, j_jet_start:j_jet_end) = rho0     ! Density
-    U(2, 1:4, j_jet_start:j_jet_end) = rho0*uJET ! Momentum along x
-    U(3, 1:4, j_jet_start:j_jet_end) = rho0*0.0 ! Momentum along y
-    U(4, 1:4, j_jet_start:j_jet_end) = rho0*(uJET**2 + 0.0**2)/2.0 + P0/(gam-1.0) ! total energy
- 
-    ! ----- BOTTOM BC (y_min, whatever x) --------
-
-    U(1, i_jet_start:i_jet_end, 1:4) = rho0      ! Density
-    U(2, i_jet_start:i_jet_end, 1:4) = rho0*0.0  ! Momentum along x
-    U(3, i_jet_start:i_jet_end, 1:4) = rho0*uJET ! Momentum along y
-    U(4, i_jet_start:i_jet_end, 1:4) = rho0*(0.0**2 + uJET**2)/2.0 + P0/(gam-1.0) ! total energy
+    U(1, 1:20*4+4, 1:20*4+4) = UJ(1)
+    U(2, 1:20*4+4, 1:20*4+4) = UJ(2) 
+    U(3, 1:20*4+4, 1:20*4+4) = UJ(3) 
+    U(4, 1:20*4+4, 1:20*4+4) = UJ(4) 
  
   end subroutine 
 
@@ -105,19 +95,71 @@ module pde
     real, dimension(Neq), intent(out) :: prim
 
     ! Working variables
-    real :: rho, ux, uy, P
+    real :: D, mx, my, E, m2
+    real :: W, rhoh, rho, ux, uy, P
 
-    ! Extract primitive variables
-    rho = U(1)
-    ux  = U(2)/(rho + 1.0d-25) ! Use a small tolerance, since rho may be zero
-    uy  = U(3)/(rho + 1.0d-25) ! Use a small tolerance, since rho may be zero
-    P   = (gam - 1.0)*( U(4) - rho*(ux**2.0 + uy**2.0)/2.0 )
+    real :: H, dHdP
+    real :: Pnew, tol
+    integer      :: itermax, iter_count
+    real :: error
+
+    ! Extract conserved variables
+    D  = U(1)
+    mx = U(2)
+    my = U(3)
+    E  = U(4)
+
+    m2 = mx*mx + my*my ! Working variable
+
+    ! Initialize Newton solver
+    tol        = real(1.0d-10)   ! Accepted error between iterations
+    itermax    = 1000      ! Maxium number of iterations
+    iter_count = 0         ! Initialize
+
+    P      = 0.01 ! Init
+    error  = 1.0 ! init
+
+    ! Iterate until convergence
+    do while (error .gt. tol)
+
+      ! print*, 'Current P: ', P, '  error: ', error
+
+      ! Function to be minimized...
+      H = D*c*c*sqrt(P*P + 2.0*E*P + E*E - m2/c/c) + 1.0/(Gam-1.0)*P*P &
+         + E*(2.0-Gam)/(Gam-1.0)*P + m2/c/c - E*E
+
+      ! ... and its derivative
+      dHdP = 2.0/(Gam-1.0)*P + E*(2.0-Gam)/(Gam-1.0) &
+           + D*c*c*(P+E)/sqrt(P*P + 2.0*E*P + E*E - m2/c/c)
+
+      Pnew  = P - H/dHdP    ! New pressure
+      error = abs(Pnew - P) ! Compute error
+      P     = Pnew          ! Update P
+
+      iter_count = iter_count + 1
+      if (iter_count .ge. itermax) then
+        print*, "ATTENTION!"
+        print*, "Iteration limit exceeded while computing primitive variables!"
+        print*, "Current solution (conserved variables):", U
+        print*, "Iteration: ", iter_count
+        print*, "Residual error: ", error
+        exit ! Exit do loop
+      end if
+
+    end do
+
+    ! Compute other quantities
+    W    = 1.0/sqrt(1.0 - m2/(c*c*(E+P)*(E+P))) ! Lorentz factor
+    rho  = D/W
+    rhoh = rho*c*c + P*Gam/(Gam-1.0)
+    ux   = mx/(rhoh*W*W)
+    uy   = my/(rhoh*W*W)
 
     ! Compose array of primitive variables
     prim(1) = rho
     prim(2) = ux
-    prim(3) = uy 
-    prim(4) = P/(kB*rho/M) ! T = P/(n*kB) = P/(rho*Ri), with Ri=kB/M the gas constant
+    prim(3) = uy
+    prim(4) = P
 
   end subroutine
 
@@ -133,19 +175,111 @@ module pde
     real, dimension(Neq), intent(out) :: prim
 
     ! Working variables
-    real :: rho, ux, uy, P
+    real :: D, mx, my, E, m2
+    real :: W, rhoh, rho, ux, uy, P
 
-    ! Extract primitive variables
-    rho = U(1)
-    ux  = U(2)/(rho + 1.0d-25) ! Use a small tolerance, since rho may be zero
-    uy  = U(3)/(rho + 1.0d-25) ! Use a small tolerance, since rho may be zero
-    P   = (gam - 1.0)*( U(4) - rho*(ux**2.0 + uy**2.0)/2.0 )
+    real :: H, dHdP
+    real :: Pnew, tol
+    integer      :: itermax, iter_count
+    real :: error
+
+    ! Extract conserved variables
+    D  = U(1)
+    mx = U(2)
+    my = U(3)
+    E  = U(4)
+
+    m2 = mx*mx + my*my ! Working variable
+
+    ! Initialize Newton solver
+    tol        = real(1.0d-10)   ! Accepted error between iterations
+    itermax    = 1000      ! Maxium number of iterations
+    iter_count = 0         ! Initialize
+
+    P      = 10.0 ! Init
+    error  = 1.0 ! init
+
+    ! Iterate until convergence
+    do while (error .gt. tol)
+
+      ! print*, 'Current P: ', P, '  error: ', error
+
+      ! Function to be minimized...
+      H = D*c*c*sqrt(P*P + 2.0*E*P + E*E - m2/c/c) + 1.0/(Gam-1.0)*P*P &
+         + E*(2.0-Gam)/(Gam-1.0)*P + m2/c/c - E*E
+
+      ! ... and its derivative
+      dHdP = 2.0/(Gam-1.0)*P + E*(2.0-Gam)/(Gam-1.0) &
+           + D*c*c*(P+E)/sqrt(P*P + 2.0*E*P + E*E - m2/c/c)
+
+      Pnew  = P - H/dHdP    ! New pressure
+      error = abs(Pnew - P) ! Compute error
+      P     = Pnew          ! Update P
+
+      iter_count = iter_count + 1
+      if (iter_count .ge. itermax) then
+        ! print*, "ATTENTION!"
+        ! print*, "Iteration limit exceeded while computing primitive variables!"
+        ! print*, "Current solution (conserved variables):", U
+        ! print*, "Iteration: ", iter_count
+        ! print*, "Residual error: ", error
+        exit ! Exit do loop
+      end if
+
+    end do
+
+    ! Compute other quantities
+    W    = 1.0/sqrt(1.0 - m2/(c*c*(E+P)*(E+P))) ! Lorentz factor
+    rho  = D/W
+    rhoh = rho*c*c + P*Gam/(Gam-1.0)
+    ux   = mx/(rhoh*W*W)
+    uy   = my/(rhoh*W*W)
 
     ! Compose array of primitive variables
     prim(1) = rho
     prim(2) = ux
-    prim(3) = uy 
-    prim(4) = P/(kB*rho/M) ! T = P/(n*kB) = P/(rho*Ri), with Ri=kB/M the gas constant
+    prim(3) = uy
+    prim(4) = P
+
+  end subroutine
+ 
+  ! ============================================================
+ 
+  subroutine CPU_compute_conserved_from_primitive(prim, U)
+
+    ! Computes vector of conserved variables "U" from the primitive variables "U"
+
+    implicit none
+
+    real, dimension(Neq), intent(in)  :: prim
+    real, dimension(Neq), intent(out) :: U
+
+    ! Working variables
+    real :: rho, ux, uy, P, u2
+    real :: W, D, rhoh, mx, my, E
+
+    ! Extract primitive variables
+    rho = prim(1)
+    ux  = prim(2)
+    uy  = prim(3)
+    P   = prim(4)
+
+    ! Compute Lorentz factor and enthalpy
+    u2   = ux*ux + uy*uy
+    W    = 1.0/sqrt(1.0 - u2/(c*c))
+    rhoh = rho*c*c + P*Gam/(Gam-1.0) ! Equation of state
+
+    ! Build conserved variables
+    D  = rho*W
+    mx = rhoh*W*W*ux
+    my = rhoh*W*W*uy
+    E  = rhoh*W*W - P
+
+    ! Compose array of conserved variables
+    U(1) = D
+    U(2) = mx
+    U(3) = my
+    U(4) = E
 
   end subroutine
   
@@ -161,21 +295,31 @@ module pde
     real, dimension(Neq), intent(out) :: U
 
     ! Working variables
-    real :: rho, ux, uy, T, P
+    real :: rho, ux, uy, P, u2
+    real :: W, D, rhoh, mx, my, E
 
     ! Extract primitive variables
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
+    P   = prim(4)
 
-    P   = rho/M*kB*T
+    ! Compute Lorentz factor and enthalpy
+    u2   = ux*ux + uy*uy
+    W    = 1.0/sqrt(1.0 - u2/(c*c))
+    rhoh = rho*c*c + P*Gam/(Gam-1.0) ! Equation of state
 
-    ! Compose array of primitive variables
-    U(1) = rho
-    U(2) = rho*ux
-    U(3) = rho*uy 
-    U(4) = rho*(ux*ux+uy*uy)/2.0 + P/(gam-1.0) 
+    ! Build conserved variables
+    D  = rho*W
+    mx = rhoh*W*W*ux
+    my = rhoh*W*W*uy
+    E  = rhoh*W*W - P
+
+    ! Compose array of conserved variables
+    U(1) = D
+    U(2) = mx
+    U(3) = my
+    U(4) = E
 
   end subroutine
   
@@ -191,29 +335,34 @@ module pde
     real, dimension(Neq), intent(in)  :: U
     real, dimension(Neq), intent(out) :: Fx
     real, intent(out) :: ws_max, ws_min
-  
+
     real, dimension(Neq) :: prim
-    real :: rho, ux, uy, T, P, rhoE
-    
+    real :: rho, ux, uy, P, D, mx, my, a, rhoh
+
     ! Compute primitive variables
+    D  = U(1)
+    mx = U(2)
+    my = U(3)
+
     call compute_primitive_from_conserved(U, prim)
+
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
-
-    P    = rho*kB/M*T ! Compute pressure, P = n*kB*T
-    rhoE = rho*(ux*ux + uy*uy)/2.0 + P/(gam-1)
+    P   = prim(4)
 
     ! Assemble fluxes Fx
-    Fx(1) = rho*ux
-    Fx(2) = rho*ux*ux + P
-    Fx(3) = rho*ux*uy
-    Fx(4) = rhoE*ux + P*ux
-  
+    Fx(1) = D*ux
+    Fx(2) = mx*ux + P
+    Fx(3) = mx*uy
+    Fx(4) = mx
+
     ! Maximum and minimum wave speeds (eigenvalues of the Euler system)
-    ws_max = ux + sqrt(gam*P/rho)
-    ws_min = ux - sqrt(gam*P/rho)
+    rhoh = rho*c*c + P*Gam/(Gam-1.0)
+    a    = c*sqrt(Gam-1.0)*sqrt(1.0 - rho*c*c/rhoh);
+
+    ws_min = (ux - a)/(1.0- ux*a);
+    ws_max = (ux + a)/(1.0 + ux*a);
 
   end subroutine
 
@@ -229,29 +378,34 @@ module pde
     real, dimension(Neq), intent(in)  :: U
     real, dimension(Neq), intent(out) :: Fy
     real, intent(out) :: ws_max, ws_min
-  
+ 
     real, dimension(Neq) :: prim
-    real :: rho, ux, uy, T, P, rhoE
-    
+    real :: rho, ux, uy, P, D, mx, my, a, rhoh
+
     ! Compute primitive variables
+    D  = U(1)
+    mx = U(2)
+    my = U(3)
+
     call compute_primitive_from_conserved(U, prim)
+
     rho = prim(1)
     ux  = prim(2)
     uy  = prim(3)
-    T   = prim(4)
+    P   = prim(4)
 
-    P    = rho*kB/M*T ! Compute pressure, P = n*kB*T
-    rhoE = rho*(ux*ux + uy*uy)/2.0 + P/(gam-1)
+    ! Assemble fluxes Fx
+    Fy(1) = D*uy
+    Fy(2) = mx*uy
+    Fy(3) = my*uy + P
+    Fy(4) = my
 
-    ! Assemble fluxes Fy
-    Fy(1) = rho*uy
-    Fy(2) = rho*ux*uy
-    Fy(3) = rho*uy*uy + P
-    Fy(4) = rhoE*uy + P*uy
-  
     ! Maximum and minimum wave speeds (eigenvalues of the Euler system)
-    ws_max = uy + sqrt(gam*P/rho)
-    ws_min = uy - sqrt(gam*P/rho)
+    rhoh = rho*c*c + P*Gam/(Gam-1.0)
+    a    = c*sqrt(Gam-1.0)*sqrt(1.0 - rho*c*c/rhoh);
+
+    ws_min = (uy - a)/(1.0 - uy*a);
+    ws_max = (uy + a)/(1.0 + uy*a);
 
   end subroutine
 
@@ -279,20 +433,35 @@ module pde
 
     ! Computes vector of primitive variables "prim" from the conserved variables "U"
 
-    ! The source term for this PDEs is zero.
-
     implicit none
 
     real, dimension(Neq), intent(in)  :: U
     integer,              intent(in)  :: i, j
     real, dimension(Neq), intent(out) :: Src
 
-    Src = 0.0d0
+    ! Working variables
+    real, dimension(Neq) :: prim
+
+    real :: rho, ux, uy, P
+    real :: y_j
+
+    call compute_primitive_from_conserved(U, prim)
+
+    ! Compose array of primitive variables
+    rho = prim(1) 
+    ux  = prim(2) 
+    uy  = prim(3) 
+    P   = prim(4) 
+
+    y_j = y_min + dy/2.0 + real(j-5)*dy ! Remember: 4 ghost cells per side
+
+    Src = 0.0
+    Src(3) = P/y_j
 
   end subroutine
-
-  ! ============================================================= 
-
+ 
+  ! ============================================================
+ 
    attributes(global) subroutine assign_BCs(U)
  
    ! This subroutine assigns boundary values to the ghost cells. 
@@ -410,6 +579,8 @@ module pde
      ! Axi-symmetric solution
      if (bool_AXI) then
  
+       !! TODO: iumplement this in the PDE module      
+ 
        U(:,i,4) =   U(:,i,5)
        U(3,i,4) = - U(3,i,5) ! rho uy
  
@@ -425,5 +596,7 @@ module pde
      end if
  
    end subroutine 
+
+
 
 end module

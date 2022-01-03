@@ -8,30 +8,41 @@ module global_module
   
   ! Time integration
 
-  real, parameter :: CFL_target  = 0.5    ! Target CFL for the simulation
-  real, parameter :: t_end       = 10.0d0  ! [s] total simulated time (from 0 to t_end)
+  real, parameter :: CFL_target  = 0.1   ! Target CFL for the simulation
+  real, parameter :: t_end       = 80.0d0  ! [s] total simulated time (from 0 to t_end)
   real, parameter :: dt_max      = 0.01    ! [s] maximum admissible time step (useful if you have sources)
 
-  integer, parameter :: WRITE_VTK_EACH = 100 ! Write a VTK file each this many time steps
+  integer, parameter :: WRITE_VTK_EACH = 200 ! Write a VTK file each this many time steps
 
   ! Specify domain and discretization
 
-  real, parameter :: x_min = -1.0 ! [m] 
+  real, parameter :: x_min = 0.0 ! [m] 
   real, parameter :: x_max = 1.0  ! [m] 
-  real, parameter :: y_min = -1.0 ! [m] 
+  real, parameter :: y_min = 0.0 ! [m] 
   real, parameter :: y_max = 1.0  ! [m] 
 
-  ! Boundary conditions
-  logical, parameter :: X_PERIODIC = .True.
-  logical, parameter :: Y_PERIODIC = .True.
+  ! Boundary conditions 
+  logical, parameter :: bool_AXI = .False. ! Axi-symmetric simulation? Modifies 1) update and 2) BCs
+
+  logical, parameter :: X_PERIODIC = .False.
+  logical, parameter :: Y_PERIODIC = .False.
 
   logical, parameter :: X_low_ZEROGRAD  = .False.
-  logical, parameter :: X_high_ZEROGRAD = .False.
+  logical, parameter :: X_high_ZEROGRAD = .True.
   logical, parameter :: Y_low_ZEROGRAD  = .False.
-  logical, parameter :: Y_high_ZEROGRAD = .False.
+  logical, parameter :: Y_high_ZEROGRAD = .True.
 
-  ! MUSCL reconstruction (second order in space, TVD)
-  logical, parameter :: MUSCL_bool = .False.
+  ! Spacial accuracy (order)
+  ! 1: uniform sol in cell, first order in space
+  ! 2: MUSCL with TVD slope limiter, second order in space
+  ! 3: WENO 3rd order
+  ! 5: WENO 5th order
+  integer, parameter :: space_order = 2
+
+  ! Time accuracy (order)
+  ! 1: forward Euler, first order in time
+  ! 3: explicit TVD Runge-Kutta, third order in time
+  integer, parameter :: time_order = 1
 
   ! ======== CUDA launch configuration and GRID ==========
   ! Threads per block along x and y
@@ -49,7 +60,7 @@ module global_module
   integer, parameter :: Nx = N_BLOCKS_X*BLOCK_X_threads
   integer, parameter :: Ny = N_BLOCKS_Y*BLOCK_Y_threads
 
-  real, parameter :: dx = (x_max-x_min)/(Nx-4)
-  real, parameter :: dy = (y_max-y_min)/(Ny-4)
+  real, parameter :: dx = (x_max-x_min)/real(Nx-8)
+  real, parameter :: dy = (y_max-y_min)/real(Ny-8)
 
 end module

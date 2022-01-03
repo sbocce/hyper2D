@@ -275,155 +275,122 @@ module pde
 
   ! ============================================================
 
-  attributes(device) subroutine compute_source_term(U, i, j, Src)
+  attributes(global) subroutine assign_BCs(U)
 
-    ! Computes vector of primitive variables "prim" from the conserved variables "U"
-
-    ! The source term for this PDEs is zero.
-
+  ! This subroutine assigns boundary values to the ghost cells. 
+  ! Remember, there are 4 ghost cells for each boundary.
+  ! If X_PERIODIC or Y_PERIODIC booleans are set, then periodic BCs are updated. 
+  ! This is done by copying into the ghost cells the values inside the 
+  ! domain cells at the other side of the domain.
+  ! Otherwise, if these are not set, the boundary cells are left at their previous value.
+ 
     implicit none
 
-    real, dimension(Neq), intent(in)  :: U
-    integer,              intent(in)  :: i, j
-    real, dimension(Neq), intent(out) :: Src
+    real, dimension(:,:,:) :: U ! This is a device variable, in global memory
 
-    Src = 0.0d0
+    integer :: i, j
 
-  end subroutine
+    i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
+    j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
 
-  ! ============================================================= 
+    ! ----- Periodic BCs ------
+    if (X_PERIODIC) then
 
-   attributes(global) subroutine assign_BCs(U)
- 
-   ! This subroutine assigns boundary values to the ghost cells. 
-   ! If X_PERIODIC or Y_PERIODIC booleans are set, then periodic BCs are updated. 
-   ! This is done by copying into the ghost cells the values inside the 
-   ! domain cells at the other side of the domain.
-   ! Otherwise, if these are not set, the boundary cells are left at their previous value.
-  
-     implicit none
- 
-     real, dimension(:,:,:) :: U ! This is a device variable, in global memory
- 
-     integer :: i, j
- 
-     i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
-     j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
- 
-     ! ----- Periodic BCs ------
-     if (X_PERIODIC) then
- 
-       if (i .eq. 1) then
-         U(:, i,j) = U(:, Nx-7,j)
-       else if (i .eq. 2) then
-         U(:, i,j) = U(:, Nx-6,j)
-       else if (i .eq. 3) then
-         U(:, i,j) = U(:, Nx-5,j)
-       else if (i .eq. 4) then
-         U(:, i,j) = U(:, Nx-4,j)
- 
-       else if (i .eq. Nx-3) then
-         U(:, i,j) = U(:, 5,j)
-       else if (i .eq. Nx-2) then
-         U(:, i,j) = U(:, 6,j)
-       else if (i .eq. Nx-1) then
-         U(:, i,j) = U(:, 7,j)
-       else if (i .eq. Nx)   then
-         U(:, i,j) = U(:, 8,j)
-       end if
- 
-     end if
- 
-     if (Y_PERIODIC) then
- 
-       if (j .eq. 1) then
-         U(:, i,j) = U(:, i, Ny-7)
-       else if (j .eq. 2) then
-         U(:, i,j) = U(:, i, Ny-6)
-       else if (j .eq. 3) then
-         U(:, i,j) = U(:, i, Ny-5)
-       else if (j .eq. 4) then
-         U(:, i,j) = U(:, i, Ny-4)
- 
-       else if (j .eq. Ny-3) then
-         U(:, i,j) = U(:, i, 5)
-       else if (j .eq. Ny-2) then
-         U(:, i,j) = U(:, i, 6)
-       else if (j .eq. Ny-1) then
-         U(:, i,j) = U(:, i, 7)
-       else if (j .eq. Ny)   then
-         U(:, i,j) = U(:, i, 8)
-       end if
- 
-     end if
- 
-     ! ----- Zero Gradient -----
- 
-     if (X_low_ZEROGRAD) then
-       if (i .eq. 1) then
-         U(:, i,j) = U(:, 5,j)
-       else if (i .eq. 2) then
-         U(:, i,j) = U(:, 5,j)
-       else if (i .eq. 3) then
-         U(:, i,j) = U(:, 5,j)
-       else if (i .eq. 4) then
-         U(:, i,j) = U(:, 5,j)
-       end if
-     end if
- 
-     if (X_high_ZEROGRAD) then
-       if (i .eq. Nx-3) then
-         U(:, i,j) = U(:, Nx-4,j)
-       else if (i .eq. Nx-2) then
-         U(:, i,j) = U(:, Nx-4,j)
-       else if (i .eq. Nx-1) then
-         U(:, i,j) = U(:, Nx-4,j)
-       else if (i .eq. Nx) then
-         U(:, i,j) = U(:, Nx-4,j)
-       end if
-     end if
- 
-     if (Y_low_ZEROGRAD) then
-       if (j .eq. 1) then
-         U(:, i,j) = U(:, i, 5)
-       else if (j .eq. 2) then
-         U(:, i,j) = U(:, i, 5)
-       else if (j .eq. 3) then
-         U(:, i,j) = U(:, i, 5)
-       else if (j .eq. 4) then
-         U(:, i,j) = U(:, i, 5)
-       end if
-     end if
- 
-     if (Y_high_ZEROGRAD) then
-       if (j .eq. Ny-3) then
-         U(:, i,j) = U(:, i, Ny-4)
-       else if (j .eq. Ny-2) then
-         U(:, i,j) = U(:, i, Ny-4)
-       else if (j .eq. Ny-1) then
-         U(:, i,j) = U(:, i, Ny-4)
-       else if (j .eq. Ny) then
-         U(:, i,j) = U(:, i, Ny-4)
-       end if
-     end if
- 
-     ! Axi-symmetric solution
-     if (bool_AXI) then
- 
-       U(:,i,4) =   U(:,i,5)
-       U(3,i,4) = - U(3,i,5) ! rho uy
- 
-       U(:,i,3) =   U(:,i,6)
-       U(3,i,3) = - U(3,i,6) ! rho uy
- 
-       U(:,i,2) =   U(:,i,7)
-       U(3,i,2) = - U(3,i,7) ! rho uy
- 
-       U(:,i,1) =   U(:,i,8)
-       U(3,i,1) = - U(3,i,8) ! rho uy
- 
-     end if
- 
-   end subroutine 
+      if (i .eq. 1) then
+        U(:, i,j) = U(:, Nx-7,j)
+      else if (i .eq. 2) then
+        U(:, i,j) = U(:, Nx-6,j)
+      else if (i .eq. 3) then
+        U(:, i,j) = U(:, Nx-5,j)
+      else if (i .eq. 4) then
+        U(:, i,j) = U(:, Nx-4,j)
+
+      else if (i .eq. Nx-3) then
+        U(:, i,j) = U(:, 5,j)
+      else if (i .eq. Nx-2) then
+        U(:, i,j) = U(:, 6,j)
+      else if (i .eq. Nx-1) then
+        U(:, i,j) = U(:, 7,j)
+      else if (i .eq. Nx)   then
+        U(:, i,j) = U(:, 8,j)
+      end if
+
+    end if
+
+    if (Y_PERIODIC) then
+
+      if (j .eq. 1) then
+        U(:, i,j) = U(:, i, Ny-7)
+      else if (j .eq. 2) then
+        U(:, i,j) = U(:, i, Ny-6)
+      else if (j .eq. 3) then
+        U(:, i,j) = U(:, i, Ny-5)
+      else if (j .eq. 4) then
+        U(:, i,j) = U(:, i, Ny-4)
+
+      else if (j .eq. Ny-3) then
+        U(:, i,j) = U(:, i, 5)
+      else if (j .eq. Ny-2) then
+        U(:, i,j) = U(:, i, 6)
+      else if (j .eq. Ny-1) then
+        U(:, i,j) = U(:, i, 7)
+      else if (j .eq. Ny)   then
+        U(:, i,j) = U(:, i, 8)
+      end if
+
+    end if
+
+    ! ----- Zero Gradient -----
+
+    if (X_low_ZEROGRAD) then
+      if (i .eq. 1) then
+        U(:, i,j) = U(:, 5,j)
+      else if (i .eq. 2) then
+        U(:, i,j) = U(:, 5,j)
+      else if (i .eq. 3) then
+        U(:, i,j) = U(:, 5,j)
+      else if (i .eq. 4) then
+        U(:, i,j) = U(:, 5,j)
+      end if
+    end if
+
+    if (X_high_ZEROGRAD) then
+      if (i .eq. Nx-3) then
+        U(:, i,j) = U(:, Nx-4,j)
+      else if (i .eq. Nx-2) then
+        U(:, i,j) = U(:, Nx-4,j)
+      else if (i .eq. Nx-1) then
+        U(:, i,j) = U(:, Nx-4,j)
+      else if (i .eq. Nx) then
+        U(:, i,j) = U(:, Nx-4,j)
+      end if
+    end if
+
+    if (Y_low_ZEROGRAD) then
+      if (j .eq. 1) then
+        U(:, i,j) = U(:, i, 5)
+      else if (j .eq. 2) then
+        U(:, i,j) = U(:, i, 5)
+      else if (j .eq. 3) then
+        U(:, i,j) = U(:, i, 5)
+      else if (j .eq. 4) then
+        U(:, i,j) = U(:, i, 5)
+      end if
+    end if
+
+    if (Y_high_ZEROGRAD) then
+      if (j .eq. Ny-3) then
+        U(:, i,j) = U(:, i, Ny-4)
+      else if (j .eq. Ny-2) then
+        U(:, i,j) = U(:, i, Ny-4)
+      else if (j .eq. Ny-1) then
+        U(:, i,j) = U(:, i, Ny-4)
+      else if (j .eq. Ny) then
+        U(:, i,j) = U(:, i, Ny-4)
+      end if
+    end if
+
+  end subroutine 
+
 
 end module

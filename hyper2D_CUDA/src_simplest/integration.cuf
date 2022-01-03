@@ -1,0 +1,126 @@
+module integration
+
+! This module contains the routines for the time integration and the computation
+! of numerical fluxes (Rusanov in this example).
+
+  use ieee_arithmetic
+  use pde
+  use global_module
+
+  implicit none
+  
+  real, dimension(Neq,Nx,Ny) :: U_new ! Working variable
+
+  contains
+
+  ! ======================================================================== 
+  
+  attributes(global) subroutine forward_Euler_step(U, U_new, dt, t_now)
+
+    ! This kernel performs one step of the Forward Euler explicit time integrator 
+
+    implicit none
+ 
+    real, dimension(Neq,Nx,Ny) :: U, U_new ! Device variable in global memory
+    real, value :: dt, t_now ! Value that we pass from host space to the kernel
+
+    integer :: i, j, eqID
+    
+    real, dimension(Neq) :: F_N, F_S, F_W, F_E 
+
+    ! Find coordinates of the present thread (aka cell i and j)
+    i = (blockIdx%x - 1)*blockDim%x + threadIDx%x
+    j = (blockIdx%y - 1)*blockDim%y + threadIDx%y
+
+    ! Update solution using the forward Euler integrator - INTERNAL CELLS only,
+    ! do not overwrite ghost cells
+    if ( (i .ge. 5) .and. (i .le. Nx-4) .and. (j .ge. 5) .and. (j .le. Ny-4) ) then
+
+      call compute_fluxes_Rusanov(U, i, j, F_N, F_S, F_W, F_E)
+
+      U_new(:,i,j) = U(:,i,j) - dt/dx*(F_E - F_W) - dt/dy*(F_N - F_S)
+        
+      ! Check that the solution did not diverge
+      do eqID = 1, Neq
+        if (ieee_is_nan(U_new(eqID,i,j))) then 
+          print*, 'Solution diverged, try with a smaller time step! Aborting.'
+          stop
+        end if
+      end do
+
+    end if
+
+  end subroutine
+
+  ! ======================================================================== 
+
+  attributes(device) subroutine compute_fluxes_Rusanov(U, i, j, F_N, F_S, F_W, F_E)
+
+    ! Computes Rusanov numerical fluxes for the cell (i,j)
+
+    implicit none
+
+    real, dimension(Neq,Nx,Ny), intent(in)  :: U
+    real, dimension(Neq),       intent(out) :: F_N, F_S, F_W, F_E 
+    integer, intent(in) :: i, j
+
+    integer :: eqID
+    real, dimension(Neq) :: U_L, U_R, F_L, F_R
+
+    real :: ws_min_L, ws_max_L, ws_min_R, ws_max_R, ws_max ! wave speeds
+
+    ! ------ North interface
+
+    ! Reconstruct the solution, passing the four cells that neighbor the interface
+    U_L = U(:,i,j)
+    U_R = U(:,i,j+1)
+
+    call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L) 
+    call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
+
+    ws_max = MAX(ABS(ws_max_L), ABS(ws_min_L), ABS(ws_max_R), ABS(ws_min_R))
+
+    F_N = 0.5*(F_R + F_L) - ws_max/2.0*(U_R-U_L) ! Rusanov flux
+
+    ! ------ South interface
+
+    ! Reconstruct the solution, passing the four cells that neighbor the interface
+    U_L = U(:,i,j-1)
+    U_R = U(:,i,j)
+
+    call compute_flux_ws_y(U_L, F_L, ws_max_L, ws_min_L)
+    call compute_flux_ws_y(U_R, F_R, ws_max_R, ws_min_R)
+
+    ws_max = MAX(ABS(ws_max_L), ABS(ws_min_L), ABS(ws_max_R), ABS(ws_min_R))
+
+    F_S = 0.5*(F_R + F_L) - ws_max/2.0*(U_R-U_L) ! Rusanov flux
+
+    ! ------ East interface
+
+    ! Reconstruct the solution, passing the four cells that neighbor the interface
+    U_L = U(:,i,j)
+    U_R = U(:,i+1,j)
+
+    call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
+    call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
+
+    ws_max = MAX(ABS(ws_max_L), ABS(ws_min_L), ABS(ws_max_R), ABS(ws_min_R))
+
+    F_E = 0.5*(F_R + F_L) - ws_max/2.0*(U_R-U_L) ! Rusanov flux
+
+    ! ------ West interface
+
+    ! Reconstruct the solution, passing the four cells that neighbor the interface
+    U_L = U(:,i-1,j)
+    U_R = U(:,i,j)
+
+    call compute_flux_ws_x(U_L, F_L, ws_max_L, ws_min_L)
+    call compute_flux_ws_x(U_R, F_R, ws_max_R, ws_min_R)
+
+    ws_max = MAX(ABS(ws_max_L), ABS(ws_min_L), ABS(ws_max_R), ABS(ws_min_R))
+
+    F_W = 0.5*(F_R + F_L) - ws_max/2.0*(U_R-U_L) ! Rusanov flux
+
+  end subroutine
+
+end module
