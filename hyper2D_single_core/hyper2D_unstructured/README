@@ -1,0 +1,101 @@
+==========
+= README =
+==========
+
+The hyper2D_unstructured directory contains a Hyper2D implementation that supports 
+unstructured quad grids.
+
+The grid can be created for instance with GMSH and needs to be exported in SU2 format.
+Such exported grid then needs to be processed before being digestible by hyper2D. This
+can be done with the Octave/MATLAB script "process_su2_quad_grid.m"
+
+========
+= GRID = 
+========
+
+When the grid is created, you need to assign a numeric value to the boundary interfaces.
+These need to be:
+
+BC_inlet_ID  = -1;
+BC_outlet_ID = -2;
+BC_wall_ID   = -3;
+BC_sym_ID    = -4;
+
+These values are set in the "process_su2_quad_grid.m" script. You can modify the values
+directly inside the script. NOTICE THAT THESE VALUES ARE NEGATIVE! This is so that 
+Hyper2D can immediately recognize a boundary ID from an element ID, while running.
+The grid filename is also specified in the "process_su2_quad_grid.m" script.
+The script will create two files that are digestible by Hyper2D: a nodes.hyp and a mesh.hyp
+files. 
+
+The nodes.hyp file contains the number of nodes on the first line, and then 
+the (x,y) position of each node. 
+
+The mesh.hyp file contains on the first non-commented line the total number of elements, and 
+the other lines contain, for each element, the remaining info that is needed for doing the computations.
+This info is:
+# ele_ID, A, xC, yC, L12, n12(1), n12(2), neigh_12, L23, n23(1), n23(2), neigh_23, L34, n34(1), n34(2), neigh_34, L41, n41(1), n41(2), neigh_41)
+
+ele_ID: ID of the quad element (progressively increasing from 1 to Nele). Numbering starts from 1, in Fortran-style.
+A:      Area of the element;
+xC, yC: Position of the element centroid;
+
+Interfaces are labeled as "12", "23", "34", "41" (meaning <<from point 1 to point 2>> etc etc).
+L12:       Length of the interface "12"
+n12(1):    x-component of the normal vector for the interface "12"
+n12(2):    y-component of the normal vector for the interface "12"
+neigh_12:  ID of the quad element that neighbors the interface "12" (if the interface is a boundary
+           interface, then this will be a negative value, among "BC_inlet_ID", "BC_outlet_ID" etc etc)
+
+L23:       ....
+n23(1):    ...
+etc etc with the other interfaces.
+
+TODO: THE OCTAVE SCRIPT TAKES A WHILE TO RUN! MAKE IT MORE EFFICIENT OR REPLACE IT WITH A FORTRAN CODE
+
+Note that you need to copy these files in the same directory as the executable.
+
+==========================
+= Specifying BCs and ICs =
+==========================
+
+As for the simpler versions of Hyper2D, the BCs are specified into the pde.f03 file, in the 
+"initialize_solution()" subroutine.
+The Initial Conditions (ICs) are specified in the global_module.f03 file.
+
+Some different PDE systems are available in the "src/various_PDEs" directory.
+
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
+=========================
+= STRUCTURE OF THE CODE =
+=========================
+
+The hyper2d.f03 contains the main program.
+The global settings are implemented in the global_module.f03 file.
+The PDEs are implemented in the pde.f03 file.
+The time integrator and the computation of numerical fluxes are inside integrator.f03.
+The routine for exporting to VTK is in tools.f03.
+
+The program goes like this:
+1) The solution is initialized (calling pde.f03)
+2) Boundary conditions are applied (calling pde.f03)
+3) Time integration starts (calling integration.f03)
+  3.1) Numerical fluxes are computed 
+  3.2) The solution is updated in time
+4) The solution is exported (calling tools.f03)
+
+

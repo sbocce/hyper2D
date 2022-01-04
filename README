@@ -16,6 +16,14 @@ licensed under the BSD-3-clause license.
 ***     hypersonic flows,
 ***  
 ***     SoftwareX (WORK IN PROGRESSSSSSSSS)
+***
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
+***     WORK IN PROGRESSSSSSSSS
 ***    
 **********************************************************************************
 
@@ -33,6 +41,8 @@ Each version is completely independent.
 
 Here is a summary:
 
+----- The hyper1D directory contains the following: ------
+
 # PDE1D
 
   This is a simple one-dimensional finite volume solver, implemented in Octave/MATLAB,
@@ -42,6 +52,8 @@ Here is a summary:
 # hyper1D
 
   Fortran version of PDE1D, also showing higher order in space and time.
+
+------ The hyper2D_single_core contains simple 2D implementations that run on a single core ------
 
 # hyper2D_basic
 
@@ -57,7 +69,6 @@ Here is a summary:
  
   The domain is empty, and one can study the effect of boundaries or initialize the 
   solution with a non-trivial initial state and track its evolution.
-
 
 # hyper2D_flatplate
 
@@ -84,6 +95,8 @@ Here is a summary:
   is pre-processed using some Octave/MATLAB tools available in the "mesh_preprocessing"
   directory, resulting in a "mesh.hyp" and a "nodes.hyp" files that are intelligible 
   by Hyper2D.
+
+----- The hyper2D_CUDA directory: -----------
 
 # hyper2D_CUDA
  
