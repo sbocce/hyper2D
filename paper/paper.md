@@ -50,6 +50,12 @@ In particular, `Hyper2D` targets
 
 2. researchers wishing to implement their own set of PDEs.
 
+With respect to existing tools for solving PDEs and fluid flows such as OpenFoam,
+see @Jasak07openfoam, or SU2, see @palacios2013stanford, `Hyper2D` focuses on a 
+simple yet general implementation.
+Different PDEs are easily implemented, with little or no modification of the code.
+The code is completely procedural, and object-oriented programming is avoided.
+
 ### An introductory code
 
 The `Hyper2D` package contains a number of independent implementations of the FVM solver.
