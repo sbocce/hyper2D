@@ -52,14 +52,14 @@ In particular, `Hyper2D` targets
 
 With respect to existing tools for solving PDEs and fluid flows such as OpenFoam,
 see @Jasak07openfoam, or SU2, see @palacios2013stanford, `Hyper2D` focuses on a 
-simple yet general implementation.
+much simpler yet general implementation.
 Different PDEs are easily implemented, with little or no modification of the code.
 The code is completely procedural, and object-oriented programming is avoided.
 
 ### An introductory code
 
-The `Hyper2D` package contains a number of independent implementations of the FVM solver.
-Each standalone implementation has an increasing level of complexity and offers further features.
+The `Hyper2D` package contains a number of different implementations of the FVM solver.
+Such implementations are organized by level of complexity.
 Students can step in at the most appropriate level, depending on their knowledge of the method, 
 and work their way towards the more thorough implementations.
 
@@ -79,7 +79,7 @@ for implementing new physical models and learning the numerics.
 ### A research code
 
 The simple structure of `Hyper2D` makes it easily customizable.
-One can easily implement a new set of PDEs, by modifying the simple examples provided.
+One can implement a new set of PDEs, by modifying the simple examples provided.
 The whole solution vector is available throughout most of the code:
 this gives additional flexibility, as one has the freedom to implement non-local source 
 terms for instance, or implement different numerical schemes.
@@ -120,13 +120,55 @@ The computation of convective fluxes currently supports the following options:
 5th order WENO.
 
 
-# Example
+# A numerical example
 
 As a practical example, \autoref{fig:jet} shows the simulation of a supersonic axisymmetric jet,
 obtained solving the relativistic Euler equations on an NVidia Tesla K20X GPU.
 The initial conditions are taken from the test case by @mignone2005hllc.
 
 ![Simulation of a relativistic axisymmetric jet. Logarithm of the density in the rest frame.\label{fig:jet}](relat_jet.png)
+
+# Educational use of the software: some examples
+
+We provide here a few real-life examples to illustrate how `Hyper2D` can be used as an educational tool.
+
+### Example 1) MSc thesis: simulation of plasmas in 1D
+
+The aim of this MSc thesis was to simulate the behavior of charged particles under various 
+configurations of electric and magnetic fields, using a single or mulfi-fluid model.
+
+In this case, the student was knowledgeable about theoretical plasma physics, but lacked a previous detailed 
+exposure to the numerical solution of PDEs and to programming (with exception of some Octave/MATLAB scripting).
+The thesis project thus proceeded as follows. 
+The student:
+
+1. was introduced to the FVM method through the 1D Octave/MATLAB version of the software,
+   and learned to solve simple Riemann problems for the Euler equations;
+2. learned programming by moving to the (very similar) 1D Fortran formulation of the software,
+   then learned about higher-order numerics, different time stepping etc by moving to the more 
+   advanced higher-order 1D version;
+3. implemented his own set of equations and source terms by modifing this latter version, 
+   introducing source terms for the electric and magnetic fields, and obtained the results 
+   needed for his MSc thesis.
+   
+### Example 2) Project: 2D simulation of the atmospheric entry of space debris
+
+This project was conducted as a part of a postgraduate exam on hypersonic flows. 
+The aim was to study the pressure build-up inside a space debris reservoir entering the Earth's atmosphere.
+The student already possessed some basic knowledge of the FVM, so the project was conducted as follows:
+
+1. the student familiarized with the structure of `Hyper2D` starting from the basic 2D implementation,
+   then studied the higher order implementations;
+2. to study reservoir configurations, the student modified the `flat_plate` version of `Hyper2D`, 
+   and implemented box-like geometries;
+3. the student implemented different types of gas (mono/diatomic and with vibrational non-equilibrium) 
+   by copying the existing implementations provided in the `hypersonics` version, modifying as needed to
+   consider specific gas mixtures, and finally conducted the study on the required geometry.
+
+Once the students are familiar with the single core implementations, they can be pointed to the CUDA
+version of `Hyper2D`, in case more computationally demanding simulations are needed.
+This further requires, on the student's side, some basic knowledge of GPU architectures and of CUDA programming.
+
 
 # Acknowledgements
 
