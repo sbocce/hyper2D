@@ -5,13 +5,28 @@
 The hyper2D_unstructured directory contains a Hyper2D implementation that supports 
 unstructured quad grids.
 
-The grid can be created for instance with GMSH and needs to be exported in SU2 format.
-Such exported grid then needs to be processed before being digestible by hyper2D. This
-can be done with the Octave/MATLAB script "process_su2_quad_grid.m"
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
 
 ========
 = GRID = 
 ========
+
+The grid can be created for instance with GMSH and needs to be exported in SU2 format.
+Such exported grid then needs to be processed before being digestible by hyper2D. This
+can be done with the Octave/MATLAB script "process_su2_quad_grid.m"
 
 When the grid is created, you need to assign a numeric value to the boundary interfaces.
 These need to be:
@@ -64,21 +79,6 @@ As for the simpler versions of Hyper2D, the BCs are specified into the pde.f03 f
 The Initial Conditions (ICs) are specified in the global_module.f03 file.
 
 Some different PDE systems are available in the "src/various_PDEs" directory.
-
-==================================
-= COMPILING AND RUNNING THE CODE =
-==================================
-
-For compiling the code, go into the src directory and type "make".
-This will create the 'hyper2d.exe' executable file. 
-Copy it to the desired location and run it with:
-
-$ ./hyper2d.exe
-
-*****
-***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
-***** DIRECTORY. YOU NEED TO CREATE IT!
-*****
 
 =========================
 = STRUCTURE OF THE CODE =

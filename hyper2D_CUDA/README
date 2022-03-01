@@ -13,6 +13,21 @@ is chosen based on the Courant number, higher order in space and time
 is implemented, and there are some different PDEs implemented, including axisymmetric 
 formulations.
 
+==================================
+= COMPILING AND RUNNING THE CODE =
+==================================
+
+For compiling the code, go into the src directory and type "make".
+This will create the 'hyper2d.exe' executable file. 
+Copy it to the desired location and run it with:
+
+$ ./hyper2d.exe
+
+*****
+***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
+***** DIRECTORY. YOU NEED TO CREATE IT!
+*****
+
 ==========================================
 = Computational grid, threads and blocks =
 ==========================================
@@ -81,21 +96,6 @@ All input data is specified inside the global_module.f03 file. You can modify it
 compile and run the code.
 
 Some different PDE systems are available in the "src/various_PDEs" directory.
-
-==================================
-= COMPILING AND RUNNING THE CODE =
-==================================
-
-For compiling the code, go into the src directory and type "make".
-This will create the 'hyper2d.exe' executable file. 
-Copy it to the desired location and run it with:
-
-$ ./hyper2d.exe
-
-*****
-***** NOTE THAT hyper2d WILL ATTEMPT TO WRITE THE OUTPUT INSIDE A LOCAL "dumps"
-***** DIRECTORY. YOU NEED TO CREATE IT!
-*****
 
 =========================
 = STRUCTURE OF THE CODE =

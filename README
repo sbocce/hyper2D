@@ -15,27 +15,68 @@ licensed under the BSD-3-clause license.
 ***     Hyper2D: a finite volume solver for hyperbolic equations and hypersonic flows
 ***  
 ***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
-***     WORK IN PROGRESSSSSSSSS
 ***    
 **********************************************************************************
 
-==========
-
-Suggestion: for compiling and running the code you can use the following command
-
- $ make cleanoutput && make && ./hyper2D.exe
-
-==========
+====================================================
+=== QUICK INTRO ====================================
+====================================================
 
 Hyper2D is designed to be as simple as possible and suitable for teaching purposes.
-You will find in this directory various versions of Hyper2D, with increasing capabilities and complexity.
-Each version is completely independent.
+You will find in this package various versions of Hyper2D, with increasing capabilities and complexity.
+Each version is completely independent, and is compiled and run independently from the others.
 
+====================================================
+=== REQUIREMENTS ===================================
+====================================================
+
+Hyper2D was tested on GNU/Linux. The software requirements depend on the specific Hyper2D 
+implementation to be used:
+
+> hyper1D directory:
+
+  - PDE1D_Octave -> runs under Octave and/or MATLAB (with little or no modifications)
+  - src_hyper1D and src_hyper1D_simple -> Fortran versions, require gfortran and make.
+
+> hyper2D_single_core directory: Fortran versions, require gfortran and make
+
+> hyper2D_CUDA: requires a GPU. Software requirements: make and some CUDA implementation 
+  (tested working with the NVidia HPC SDK v22, that include the nvfortran compiler;  
+  other CUDA compilers may work, but may require to modify the parameters in the Makefile).
+
+====================================================
+=== COMPILING AND RUNNING ==========================
+====================================================
+
+This package includes various versions of Hyper2D, with increasing complexity. 
+Once you have identified the version that you are interested in (1D, 2D single core or 
+2D CUDA), go to the desired src directory: you will find a Makefile. Compile with:
+
+$ make
+
+This will create an executable file "hyper2D.exe" in the local directory.
+Hyper2D will print its output in a local "dumps" directory. Make sure that it
+exists: 
+
+$ mkdir -p dumps
+
+You are now ready to run the program:
+
+$ ./hyper2D.exe
+
+After applying modifications to the program, such as changing the simulated conditions,
+you need to compile again.
+Suggestion:
+the following command allows to clean the "dumps" directory, removing the output
+of previous simulations; then compile the sources and run hyper2D:
+
+$ make cleanoutput && make && ./hyper2D.exe
+
+===========================================================
+=== CAPABILITIES AND IMPLEMENTATIONS OF HYPER2D ===========
+===========================================================
+
+As mentioned, Hyper2D comes in different implementations, with increasing degrees of complexity.
 Here is a summary:
 
 ----- The hyper1D directory contains the following: ------
@@ -46,9 +87,14 @@ Here is a summary:
   aimed at familiarizing with the Finite Volume Method. It solves the Euler equations 
   for the Sod shock tube problem.
 
+# hyper1D_simple
+
+  The simplest Fortran implementation. Pretty much a direct re-implementation of the 
+  Octave/MATLAB version.
+
 # hyper1D
 
-  Fortran version of PDE1D, also showing higher order in space and time.
+  Fortran version of PDE1D, including higher order (in space and time) numerics.
 
 ------ The hyper2D_single_core contains simple 2D implementations that run on a single core ------
 
@@ -66,6 +112,8 @@ Here is a summary:
  
   The domain is empty, and one can study the effect of boundaries or initialize the 
   solution with a non-trivial initial state and track its evolution.
+
+  Includes an axisymmetric formulation.
 
 # hyper2D_flatplate
 
@@ -86,6 +134,12 @@ Here is a summary:
   is only done on the vibrational energy equation, since the source term for the other
   equations is zero.
 
+# hyper2D_kinetic
+  
+  This version solves the kinetic Boltzmann/Vlasov equation, in a "1D in physical space" 
+  and "1V in velocity" phase space. The variable "x" represents physical space and 
+  the variable "y" represents velocity.
+
 # hyper2D_unstructured
   
   This version reads an unstructured grid of quadrilaterals in SU2 format. The grid
@@ -95,10 +149,16 @@ Here is a summary:
 
 ----- The hyper2D_CUDA directory: -----------
 
+# hyper2D_CUDA_simplest
+
+  The simplest GPU implementation of Hyper2D, written in CUDA Fortran, intended for 
+  familiarizing with CUDA instructions. Runs on NVidia GPUs, on a single GPU.
+
 # hyper2D_CUDA
  
-  This version is written in CUDA Fortran and allows you to run Hyper2D on an NVidia
-  GPU. The code runs on a single GPU. 
-
+  This is the most advanced version of hyper2D, is written in CUDA Fortran and allows 
+  you to run Hyper2D on an NVidia GPU, with higher order numerics. 
+  The code runs on a single GPU. The implementation includes axial symmetry (see the 
+  README in the specific folder).
 
 
