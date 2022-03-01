@@ -48,6 +48,10 @@ implementation to be used:
 === COMPILING AND RUNNING ==========================
 ====================================================
 
+First, you can clone this repository from github with:
+
+$ git clone github.com/sbocce/hyper2D
+
 This package includes various versions of Hyper2D, with increasing complexity. 
 Once you have identified the version that you are interested in (1D, 2D single core or 
 2D CUDA), go to the desired src directory: you will find a Makefile. Compile with:
