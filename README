@@ -7,14 +7,18 @@ licensed under the BSD-3-clause license.
 
 **********************************************************************************
 ***
-***  Hyper2D comes for free. If you use Hyper2D in your research, please cite the
-***  following paper, describing the software: 
+***  CITING Hyper2D
+***
+***  Hyper2D comes for free. We don't have a specific journal publication for it,
+***  however, if you use Hyper2D in your research, you could cite the following 
+***  publication, where we use Hyper2D to solve the Euler equations and some other 
+***  hyperbolic PDEs:
 ***  
 ***     S. Boccelli, J. G. McDonald, T. E. Magin, 
-***  
-***     Hyper2D: a finite volume solver for hyperbolic equations and hypersonic flows
-***  
-***     WORK IN PROGRESSSSSSSSS
+***
+***     14-moment maximum-entropy modelling of collisionless ions for Hall thruster discharges,
+***
+***     http://arxiv.org/abs/2202.04159
 ***    
 **********************************************************************************
 
