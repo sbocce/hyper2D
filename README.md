@@ -69,20 +69,22 @@ $ make cleanoutput && make && ./hyper2D.exe
 ### Capabilities and versions of Hyper2D
 
 As mentioned, Hyper2D comes in different implementations, with increasing degrees of complexity.
-Here is a summary. The hyper1D directory contains the following:
+Here is a summary. 
 
-#### PDE1D
+The **hyper1D directory** contains the following:
+
+* PDE1D
 
   This is a simple one-dimensional finite volume solver, implemented in Octave/MATLAB,
   aimed at familiarizing with the Finite Volume Method. It solves the Euler equations 
   for the Sod shock tube problem.
 
-#### hyper1D_simple
+* hyper1D_simple
 
   The simplest Fortran implementation. Pretty much a direct re-implementation of the 
   Octave/MATLAB version.
 
-#### hyper1D
+* hyper1D
 
   Fortran version of PDE1D, including higher order (in space and time) numerics.
 
