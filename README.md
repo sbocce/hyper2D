@@ -25,14 +25,14 @@ Each version is completely independent, and is compiled and run independently fr
 Hyper2D was tested on GNU/Linux. The software requirements depend on the specific Hyper2D 
 implementation to be used:
 
-> hyper1D directory:
+1. hyper1D directory:
 
   - PDE1D_Octave -> runs under Octave and/or MATLAB (with little or no modifications)
   - src_hyper1D and src_hyper1D_simple -> Fortran versions, require gfortran and make.
 
-> hyper2D_single_core directory: Fortran versions, require gfortran and make
+2. hyper2D_single_core directory: Fortran versions, require gfortran and make
 
-> hyper2D_CUDA: requires a GPU. Software requirements: make and some CUDA implementation 
+3. hyper2D_CUDA: requires a GPU. Software requirements: make and some CUDA implementation 
   (tested working with the NVidia HPC SDK v22, that include the nvfortran compiler;  
   other CUDA compilers may work, but may require to modify the parameters in the Makefile).
 
