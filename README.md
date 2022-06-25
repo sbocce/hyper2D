@@ -88,9 +88,9 @@ The **hyper1D directory** contains the following:
 
   Fortran version of PDE1D, including higher order (in space and time) numerics.
 
------- The hyper2D_single_core contains simple 2D implementations that run on a single core ------
+The **hyper2D_single_core directory** contains simple 2D implementations that run on a single core 
 
-#### hyper2D_basic
+* hyper2D_basic
 
   This is the simplest implementation of Hyper2D, in Fortran. It includes the Shallow 
   Water equations and the Euler equations (either with constant specific heat or with 
@@ -107,13 +107,13 @@ The **hyper1D directory** contains the following:
 
   Includes an axisymmetric formulation.
 
-#### hyper2D_flatplate
+* hyper2D_flatplate
 
   This version builds on hyper2D_basic and introduces a flat plate inside the domain.
   It uses a Cartesian grid, and you can easily introduce other flat surfaces that
   are aligned with grid cells. 
  
-#### hyper2D_hypersonic
+* hyper2D_hypersonic
 
   This directory contains a non-equilibrium two-temperatures solver for the Euler 
   equations, targeted at hypersonic simulations. Two temperatures are considered: 
@@ -126,27 +126,27 @@ The **hyper1D directory** contains the following:
   is only done on the vibrational energy equation, since the source term for the other
   equations is zero.
 
-#### hyper2D_kinetic
+* hyper2D_kinetic
   
   This version solves the kinetic Boltzmann/Vlasov equation, in a "1D in physical space" 
   and "1V in velocity" phase space. The variable "x" represents physical space and 
   the variable "y" represents velocity.
 
-#### hyper2D_unstructured
+* hyper2D_unstructured
   
   This version reads an unstructured grid of quadrilaterals in SU2 format. The grid
   is pre-processed using some Octave/MATLAB tools available in the "mesh_preprocessing"
   directory, resulting in a "mesh.hyp" and a "nodes.hyp" files that are intelligible 
   by Hyper2D.
 
------ The hyper2D_CUDA directory: -----------
+The **hyper2D_CUDA directory** contains:
 
-#### hyper2D_CUDA_simplest
+* hyper2D_CUDA_simplest
 
   The simplest GPU implementation of Hyper2D, written in CUDA Fortran, intended for 
   familiarizing with CUDA instructions. Runs on NVidia GPUs, on a single GPU.
 
-#### hyper2D_CUDA
+* hyper2D_CUDA
  
   This is the most advanced version of hyper2D, is written in CUDA Fortran and allows 
   you to run Hyper2D on an NVidia GPU, with higher order numerics. 
