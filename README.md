@@ -7,10 +7,9 @@ https://github.com/sbocce/hyper2d/wiki
 
 ### Citing Hyper2D in your work
 
-Hyper2D comes for free. 
-We don't have a specific journal publication for it, however, if you use Hyper2D in your research, 
-you could cite the following publication, where we use Hyper2D to solve the Euler equations and some other
-hyperbolic PDEs:
+Hyper2D comes for free: if you use Hyper2D in your research, citing it is the best way of supporting us. 
+We don't have a specific journal publication for it, but in this one, we use Hyper2D to solve the Euler
+equations and some other hyperbolic PDEs:
 
 S. Boccelli, J. G. McDonald, T. E. Magin, _14-moment maximum-entropy modelling of collisionless ions for Hall thruster discharges_, http://arxiv.org/abs/2202.04159
 
