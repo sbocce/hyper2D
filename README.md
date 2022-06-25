@@ -4,7 +4,7 @@ Check out the Wiki:
 https://github.com/sbocce/hyper2d/wiki
 
 
-![hyper2D-banner](https://raw.githubusercontent.com/wiki/sbocce/hyper2d/imgs/hyper2d_images.png)
+![hyper2D-banner](https://raw.githubusercontent.com/wiki/sbocce/hyper2d/imgs/hyper2D_images.png)
 
 **********************************************************************************
 ***
