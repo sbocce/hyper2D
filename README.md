@@ -1,11 +1,10 @@
-====================
-===== README =======
-====================
-
 Hyper2D is a minimalistic finite volume solver for hyperbolic PDEs and hypersonic flows.
 
 Check out the Wiki: 
 https://github.com/sbocce/hyper2d/wiki
+
+
+[hyper2D-banner](https://raw.githubusercontent.com/wiki/sbocce/hyper2d/imgs/hyper2d_images.png)
 
 **********************************************************************************
 ***
