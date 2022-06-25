@@ -1,39 +1,26 @@
+![hyper2D-banner](https://raw.githubusercontent.com/wiki/sbocce/hyper2d/imgs/hyper2D_banner.png)
+
 Hyper2D is a minimalistic finite volume solver for hyperbolic PDEs and hypersonic flows.
 
 Check out the Wiki: 
 https://github.com/sbocce/hyper2d/wiki
 
+### Citing Hyper2D in your work
 
-![hyper2D-banner](https://raw.githubusercontent.com/wiki/sbocce/hyper2d/imgs/hyper2D_banner.png)
+Hyper2D comes for free. 
+We don't have a specific journal publication for it, however, if you use Hyper2D in your research, 
+you could cite the following publication, where we use Hyper2D to solve the Euler equations and some other
+hyperbolic PDEs:
 
-**********************************************************************************
-***
-***  CITING Hyper2D
-***
-***  Hyper2D comes for free. We don't have a specific journal publication for it,
-***  however, if you use Hyper2D in your research, you could cite the following 
-***  publication, where we use Hyper2D to solve the Euler equations and some other 
-***  hyperbolic PDEs:
-***  
-***     S. Boccelli, J. G. McDonald, T. E. Magin, 
-***
-***     14-moment maximum-entropy modelling of collisionless ions for Hall thruster discharges,
-***
-***     http://arxiv.org/abs/2202.04159
-***    
-**********************************************************************************
+S. Boccelli, J. G. McDonald, T. E. Magin, _14-moment maximum-entropy modelling of collisionless ions for Hall thruster discharges_, http://arxiv.org/abs/2202.04159
 
-====================================================
-=== QUICK INTRO ====================================
-====================================================
+### Quick intro
 
 Hyper2D is designed to be as simple as possible and suitable for teaching purposes.
 You will find in this package various versions of Hyper2D, with increasing capabilities and complexity.
 Each version is completely independent, and is compiled and run independently from the others.
 
-====================================================
-=== REQUIREMENTS ===================================
-====================================================
+### Requirements
 
 Hyper2D was tested on GNU/Linux. The software requirements depend on the specific Hyper2D 
 implementation to be used:
@@ -49,9 +36,7 @@ implementation to be used:
   (tested working with the NVidia HPC SDK v22, that include the nvfortran compiler;  
   other CUDA compilers may work, but may require to modify the parameters in the Makefile).
 
-====================================================
-=== COMPILING AND RUNNING ==========================
-====================================================
+### Compiling and running
 
 First, you can clone this repository from github with:
 
@@ -81,9 +66,7 @@ of previous simulations; then compile the sources and run hyper2D:
 
 $ make cleanoutput && make && ./hyper2D.exe
 
-===========================================================
-=== CAPABILITIES AND IMPLEMENTATIONS OF HYPER2D ===========
-===========================================================
+# Capabilities and versions of Hyper2D
 
 As mentioned, Hyper2D comes in different implementations, with increasing degrees of complexity.
 Here is a summary:
