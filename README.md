@@ -11,7 +11,8 @@ Hyper2D comes for free: if you use Hyper2D in your research, citing it is the be
 
 S. Boccelli, _Hyper2D: A finite-volume solver for hyperbolic equations and non-equilibrium flows_, Software Impacts, 2023.
 
-@article{BOCCELLI2023100557,
+Bibtex:
+```@article{BOCCELLI2023100557,
 title = {Hyper2D: A finite-volume solver for hyperbolic equations and non-equilibrium flows},
 journal = {Software Impacts},
 pages = {100557},
@@ -21,6 +22,7 @@ doi = {https://doi.org/10.1016/j.simpa.2023.100557},
 url = {https://www.sciencedirect.com/science/article/pii/S2665963823000945},
 author = {Stefano Boccelli}
 }
+```
 
 ### Quick intro
 
